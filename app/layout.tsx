@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { GoogleAnalytics } from "@next/third-parties/google";
 import "./globals.css";
 import { helvetica } from "@/lib/fonts";
 import Header from "@/components/Header";
@@ -70,6 +71,8 @@ export const metadata: Metadata = {
   // canonical은 app/page.tsx(홈)와 각 글 페이지에서 개별 지정한다.
 };
 
+const GA_ID = process.env.NEXT_PUBLIC_GA_ID;
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -85,6 +88,9 @@ export default function RootLayout({
         <Header />
         {children}
       </body>
+      {/* 구글 애널리틱스(GA4). 측정 ID(G-XXXXXXX)를 환경변수에 넣으면 동작한다.
+          값이 없으면 스크립트를 아예 넣지 않는다. */}
+      {GA_ID && <GoogleAnalytics gaId={GA_ID} />}
     </html>
   );
 }

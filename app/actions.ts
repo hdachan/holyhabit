@@ -2,11 +2,26 @@
 
 import { updateTag } from "next/cache";
 import { createSupabaseAdminClient } from "@/lib/supabase";
+import { sanitizePostHtml } from "@/lib/sanitize";
+import { requireAdmin } from "@/lib/auth";
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 
 // 영문 소문자, 숫자, 하이픈(-)만 허용. 한글/공백/특수문자는 전부 거부합니다.
 const SLUG_PATTERN = /^[a-z0-9]+(-[a-z0-9]+)*$/;
+
+// 대표 이미지는 우리 Supabase Storage에 올린 것만 허용한다.
+// next.config.ts의 이미지 허용 도메인과 맞춰야 한다. 다른 주소가 저장되면
+// next/image가 변환을 거부해서 글 페이지가 에러로 깨진다.
+const STORAGE_PUBLIC_PREFIX = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/`;
+
+function checkImageUrl(url: string | null) {
+  if (!url) return null;
+  if (!url.startsWith(STORAGE_PUBLIC_PREFIX)) {
+    throw new Error("대표 이미지는 업로드한 이미지만 사용할 수 있어요.");
+  }
+  return url;
+}
 
 type CreatePostInput = {
   title: string;
@@ -21,10 +36,12 @@ type UpdatePostInput = CreatePostInput & {
 };
 
 export async function createPost(input: CreatePostInput) {
+  await requireAdmin();
+
   const title = input.title.trim();
   const slug = input.slug.trim();
   const eyebrow = input.eyebrow.trim() || "업데이트";
-  const bodyHtml = input.bodyHtml.trim();
+  const bodyHtml = sanitizePostHtml(input.bodyHtml).trim();
 
   if (!title || !bodyHtml) {
     throw new Error("제목과 본문은 필수예요.");
@@ -46,7 +63,7 @@ export async function createPost(input: CreatePostInput) {
     eyebrow,
     title,
     body: bodyHtml,
-    image_url: input.imageUrl || null,
+    image_url: checkImageUrl(input.imageUrl),
   });
 
   if (error) {
@@ -69,10 +86,12 @@ export async function createPost(input: CreatePostInput) {
  * 어떤 행을 수정할지는 originalSlug로 찾습니다.
  */
 export async function updatePost(input: UpdatePostInput) {
+  await requireAdmin();
+
   const title = input.title.trim();
   const slug = input.slug.trim();
   const eyebrow = input.eyebrow.trim() || "업데이트";
-  const bodyHtml = input.bodyHtml.trim();
+  const bodyHtml = sanitizePostHtml(input.bodyHtml).trim();
   const originalSlug = input.originalSlug.trim();
 
   if (!title || !bodyHtml) {
@@ -98,7 +117,7 @@ export async function updatePost(input: UpdatePostInput) {
       eyebrow,
       title,
       body: bodyHtml,
-      image_url: input.imageUrl || null,
+      image_url: checkImageUrl(input.imageUrl),
     })
     .eq("slug", originalSlug)
     .select("slug");
@@ -123,6 +142,8 @@ export async function updatePost(input: UpdatePostInput) {
  * 글을 삭제합니다. 연결된 대표이미지가 있으면 Storage에서도 함께 지웁니다.
  */
 export async function deletePost(slug: string) {
+  await requireAdmin();
+
   const supabase = createSupabaseAdminClient();
 
   // 삭제 전에 이미지 URL을 먼저 확보해둡니다.
@@ -149,6 +170,8 @@ export async function deletePost(slug: string) {
  * 5MB 제한을 서버에서도 한 번 더 검증합니다 (클라이언트 검증은 우회될 수 있어서).
  */
 export async function uploadImage(formData: FormData): Promise<string> {
+  await requireAdmin();
+
   const file = formData.get("file");
 
   if (!(file instanceof File)) {
@@ -201,6 +224,8 @@ function extractStoragePath(url: string | null): string | null {
  * 실패해도 전체 흐름을 막을 정도는 아니라서 에러는 로그만 남깁니다.
  */
 export async function deleteImageByUrl(url: string | null) {
+  await requireAdmin();
+
   const path = extractStoragePath(url);
   if (!path) return;
 
