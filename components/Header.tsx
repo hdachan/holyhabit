@@ -17,10 +17,10 @@ export default function Header() {
           />
         </Link>
         <nav className="flex items-center gap-10 text-[17px] text-[#1d1d1f]">
-          <Link href="/about" className="hover:opacity-70">
+          <Link href="/" className="hover:opacity-70">
             소개
           </Link>
-          <Link href="/" className="hover:opacity-70">
+          <Link href="/news" className="hover:opacity-70">
             콘텐츠
           </Link>
         </nav>

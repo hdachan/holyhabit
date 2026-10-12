@@ -9,9 +9,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const posts = await getAllPosts();
 
   return [
-    // 홈은 최신 글이 올라올 때마다 바뀌므로 가장 최근 글 시각을 lastmod로 쓴다.
-    { url: SITE_URL, lastModified: posts[0]?.updatedAt },
-    { url: `${SITE_URL}/about` },
+    // 홈(브랜드 소개)
+    { url: SITE_URL },
+    // 글 목록은 최신 글이 올라올 때마다 바뀌므로 가장 최근 글 시각을 lastmod로 쓴다.
+    { url: `${SITE_URL}/news`, lastModified: posts[0]?.updatedAt },
     ...posts.map((post) => ({
       url: `${SITE_URL}/news/${post.slug}`,
       lastModified: post.updatedAt,

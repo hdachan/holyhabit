@@ -128,12 +128,12 @@ export default async function NewsDetailPage({ params }: PageProps) {
           )}
 
           <div className="mx-auto max-w-[760px] px-[18px] py-12">
-            {/* 콘텐츠 홈으로 돌아가기 */}
+            {/* 콘텐츠 목록으로 돌아가기 */}
             <Link
-              href="/"
+              href="/news"
               className="mb-8 inline-flex items-center gap-1 text-[15px] text-[#6e6e73] hover:text-[#1d1d1f]"
             >
-              ← 콘텐츠 홈으로 돌아가기
+              ← 콘텐츠 목록으로 돌아가기
             </Link>
 
             {/* 글 (제목/메타) */}

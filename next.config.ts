@@ -14,6 +14,10 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  // 소개 페이지를 메인(/)으로 옮겼다. 예전 주소로 들어오거나 검색엔진에 남아 있는 링크도 메인으로 보낸다.
+  async redirects() {
+    return [{ source: "/about", destination: "/", permanent: true }];
+  },
   experimental: {
     serverActions: {
       bodySizeLimit: "6mb",
