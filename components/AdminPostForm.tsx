@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { createPost, updatePost, uploadImage, deleteImageByUrl } from "@/app/actions";
 import RichTextEditor from "@/components/RichTextEditor";
+import SeoHelper from "@/components/SeoHelper";
 import type { Post } from "@/lib/posts";
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
@@ -133,16 +134,22 @@ export default function AdminPostForm({ mode, initialPost }: Props) {
   return (
     <div className="min-h-screen bg-[#f5f5f7]">
       {/* 좌우 여백을 모바일에서 줄이고, 세로 여백도 줄임 */}
-      <div className="mx-auto max-w-[720px] px-4 py-10 sm:px-6 sm:py-16">
-        <h1 className="mb-2 text-[24px] font-bold text-[#1d1d1f] sm:text-[28px]">
+      {/* 넓은 화면: 왼쪽 글쓰기 + 오른쪽 검색 노출 도우미. 모바일: 도우미가 위에 접힌 상태로 */}
+      <div className="mx-auto grid max-w-[1120px] items-start gap-6 px-4 py-10 sm:px-6 sm:py-16 lg:grid-cols-[minmax(0,720px)_340px]">
+        <h1 className="text-[24px] font-bold text-[#1d1d1f] sm:text-[28px] lg:col-span-2">
           {mode === "create" ? "새 글 작성" : "글 수정"}
         </h1>
-        <p className="mb-8 text-[13px] text-[#6e6e73] sm:text-[14px]">
-          ⚠️ 아직 로그인 보호가 없는 임시 페이지예요. 이 주소는 외부에
-          공유하지 마세요.
-        </p>
 
-        <form onSubmit={handleSubmit} className="flex w-full min-w-0 flex-col gap-6">
+        <div className="lg:order-2">
+          <SeoHelper
+            title={title}
+            slug={slug}
+            bodyHtml={bodyHtml}
+            coverImageUrl={coverImageUrl}
+          />
+        </div>
+
+        <form onSubmit={handleSubmit} className="flex w-full min-w-0 flex-col gap-6 lg:order-1">
           <div>
             <label className="mb-1 block text-sm font-medium text-[#6e6e73]">
               라벨 (예: 업데이트, 보도자료)

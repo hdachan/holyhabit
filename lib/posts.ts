@@ -1,5 +1,6 @@
 import { unstable_cache } from "next/cache";
 import { createSupabaseClient } from "./supabase";
+import { stripHtmlToExcerpt } from "./text";
 
 export type Post = {
   slug: string;
@@ -17,27 +18,6 @@ export type Post = {
   body: string; // Tiptap 에디터에서 나온 HTML
   excerpt: string; // 카드 미리보기용 — 본문에서 태그를 뺀 짧은 요약
 };
-
-// 자주 나오는 HTML 엔티티 디코딩.
-// 태그만 지우면 &nbsp; &amp; 등이 남아서 meta description에 그대로 노출된다.
-function decodeEntities(text: string) {
-  return text
-    .replace(/&nbsp;/g, " ")
-    .replace(/&amp;/g, "&")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'");
-}
-
-function stripHtmlToExcerpt(html: string, maxLength = 120) {
-  const text = decodeEntities(html.replace(/<[^>]+>/g, " "))
-    .replace(/\s+/g, " ")
-    .trim();
-  return text.length > maxLength
-    ? `${text.slice(0, maxLength).trim()}...`
-    : text;
-}
 
 // 서버(Vercel)는 UTC라서 getDate()를 쓰면 한국 시간 오전 9시 전 글이 전날로 표시된다.
 // 한국 시간대를 명시해서 포맷한다. 출력 형식은 기존과 동일("2026년 9월 23일").
