@@ -3,6 +3,7 @@ import { GoogleAnalytics } from "@next/third-parties/google";
 import "./globals.css";
 import { helvetica } from "@/lib/fonts";
 import Header from "@/components/Header";
+import Footer from "@/components/Footer";
 // 사이트 전역 설정은 lib/site.ts 한곳에서 관리한다.
 // layout, 글 상세, sitemap, robots가 같은 값을 참조해야 브랜드명·주소가 어긋나지 않는다.
 // (layout.tsx는 Next.js 규칙상 metadata 외의 상수를 export할 수 없어서 별도 파일로 분리)
@@ -85,8 +86,17 @@ export default function RootLayout({
       className={`${helvetica.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col font-[family-name:var(--font-helvetica)]">
+        {/* RSS 위치 안내. React가 <head>로 옮겨준다.
+            metadata.alternates로 넣으면 각 페이지의 canonical 지정에 덮어써져서 사라지므로 직접 넣는다. */}
+        <link
+          rel="alternate"
+          type="application/rss+xml"
+          title={DEFAULT_TITLE}
+          href={`${SITE_URL}/rss.xml`}
+        />
         <Header />
         {children}
+        <Footer />
       </body>
       {/* 구글 애널리틱스(GA4). 측정 ID(G-XXXXXXX)를 환경변수에 넣으면 동작한다.
           값이 없으면 스크립트를 아예 넣지 않는다. */}

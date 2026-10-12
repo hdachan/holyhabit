@@ -3,7 +3,14 @@ import Link from "next/link";
 import Image from "next/image";
 import { notFound } from "next/navigation";
 import { getAllPosts, getPost, getRelatedPosts } from "@/lib/posts";
-import { SITE_URL, SITE_NAME, DEFAULT_OG_IMAGE } from "@/lib/site";
+import {
+  SITE_URL,
+  SITE_NAME,
+  DEFAULT_OG_IMAGE,
+  AUTHOR_NAME,
+  AUTHOR_BIO,
+} from "@/lib/site";
+import PostCtaBox from "@/components/PostCtaBox";
 
 type PageProps = {
   // Next.js 15부터 params가 Promise로 전달됩니다. 14 이하에서도
@@ -77,6 +84,8 @@ export default async function NewsDetailPage({ params }: PageProps) {
   }
 
   const related = await getRelatedPosts(item.slug, 3);
+  // CTA "다른 글 추천"에 쓸 글 목록 (캐시된 목록이라 추가 조회 없음)
+  const allPosts = item.cta?.type === "posts" ? await getAllPosts() : [];
 
   // 구조화 데이터(JSON-LD). 검색엔진에 "이 페이지는 기사"라고 알려서
   // 검색 결과에 발행일·작성자·대표 이미지가 정확히 표시되도록 돕는다.
@@ -89,7 +98,7 @@ export default async function NewsDetailPage({ params }: PageProps) {
     datePublished: item.publishedAt,
     dateModified: item.updatedAt,
     mainEntityOfPage: `${SITE_URL}/news/${item.slug}`,
-    author: { "@type": "Organization", name: SITE_NAME, url: SITE_URL },
+    author: { "@type": "Person", name: AUTHOR_NAME },
     publisher: {
       "@type": "Organization",
       name: SITE_NAME,
@@ -145,6 +154,8 @@ export default async function NewsDetailPage({ params }: PageProps) {
             </h1>
             {/* <time dateTime>: 사람에겐 "2026년 7월 24일", 기계에겐 ISO 날짜를 함께 제공 */}
             <p className="mb-10 text-[15px] text-[#6e6e73]">
+              <span className="font-medium text-[#1d1d1f]">{AUTHOR_NAME}</span>
+              {" · "}
               <time dateTime={item.publishedAt}>{item.date}</time>
             </p>
 
@@ -153,8 +164,30 @@ export default async function NewsDetailPage({ params }: PageProps) {
               className="post-body text-[18px] leading-[1.7] text-[#1d1d1f]/90"
               dangerouslySetInnerHTML={{ __html: item.body }}
             />
+
+            {/* 작성자 소개 — 누가 썼는지 보여줘서 글의 신뢰도를 높인다 */}
+            <div className="mt-14 flex items-center gap-4 border-t border-black/10 pt-8">
+              <Image
+                src="/icon.png"
+                alt=""
+                width={56}
+                height={56}
+                className="h-14 w-14 shrink-0 rounded-full"
+              />
+              <div>
+                <p className="text-[16px] font-bold text-[#1d1d1f]">{AUTHOR_NAME}</p>
+                <p className="mt-0.5 text-[14px] text-[#6e6e73]">{AUTHOR_BIO}</p>
+              </div>
+            </div>
           </div>
         </article>
+
+        {/* 글 하단 CTA — 관리자 화면에서 글마다 설정. 없으면 아무것도 나오지 않는다 */}
+        {item.cta && (
+          <div className="mx-auto max-w-[760px] px-[18px] pb-12">
+            <PostCtaBox post={item} allPosts={allPosts} />
+          </div>
+        )}
 
         {/* 연관 콘텐츠 — 글 본문이 아니므로 <article> 바깥에 둔다 */}
         {related.length > 0 && (

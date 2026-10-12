@@ -1,6 +1,7 @@
 import { unstable_cache } from "next/cache";
 import { createSupabaseClient } from "./supabase";
 import { stripHtmlToExcerpt } from "./text";
+import { parseCta, type PostCta } from "./cta";
 
 export type Post = {
   slug: string;
@@ -17,6 +18,7 @@ export type Post = {
   imageUrl: string | null;
   body: string; // Tiptap 에디터에서 나온 HTML
   excerpt: string; // 카드 미리보기용 — 본문에서 태그를 뺀 짧은 요약
+  cta: PostCta | null; // 글 하단 CTA (없으면 null)
 };
 
 // 서버(Vercel)는 UTC라서 getDate()를 쓰면 한국 시간 오전 9시 전 글이 전날로 표시된다.
@@ -40,6 +42,7 @@ function toPost(row: {
   image_url: string | null;
   created_at: string;
   updated_at?: string | null;
+  cta?: unknown;
 }): Post {
   return {
     slug: row.slug,
@@ -55,6 +58,7 @@ function toPost(row: {
     imageUrl: row.image_url,
     body: row.body,
     excerpt: stripHtmlToExcerpt(row.body),
+    cta: parseCta(row.cta),
   };
 }
 

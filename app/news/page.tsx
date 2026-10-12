@@ -1,13 +1,25 @@
 import type { Metadata } from "next";
 import { getAllPosts } from "@/lib/posts";
 import PostCarousel from "@/components/PostCarousel";
+import { SITE_NAME } from "@/lib/site";
+import { pageOpenGraph } from "@/lib/seo";
+
+const NEWS_DESCRIPTION =
+  "혼자서는 작심삼일, 함께라면 계속할 이유가 생깁니다. 운동 습관, 헬스 초보 팁, 꾸준함을 만드는 방법까지 holyhabit의 습관 이야기를 만나보세요.";
 
 // 콘텐츠(글 목록) 페이지 메타.
 // canonical을 layout이 아닌 각 페이지에 두는 이유: layout에 두면 모든 하위 페이지가 상속받아
 // 글 페이지까지 "정본은 홈"이라고 선언하게 된다.
 export const metadata: Metadata = {
   title: "콘텐츠",
+  // 메인과 설명이 같으면 중복 페이지로 보일 수 있어서 목록 전용 설명을 쓴다.
+  description: NEWS_DESCRIPTION,
   alternates: { canonical: "/news" },
+  openGraph: pageOpenGraph({
+    title: `콘텐츠 | ${SITE_NAME}`,
+    description: NEWS_DESCRIPTION,
+    url: "/news",
+  }),
 };
 
 // 콘텐츠 목록 — Supabase의 posts 테이블에서 글을 가져옵니다.

@@ -1,10 +1,45 @@
 import type { Metadata } from "next";
 import AboutSectionNav from "@/components/AboutSectionNav";
+import {
+  SITE_URL,
+  SITE_NAME,
+  DEFAULT_TITLE,
+  DEFAULT_DESCRIPTION,
+  SOCIAL_LINKS,
+} from "@/lib/site";
+import { pageOpenGraph } from "@/lib/seo";
 
 // 메인(홈) = 브랜드 소개. 글 목록은 /news로 옮겼다.
 // 제목·설명은 layout 기본값을 쓰고 정본 주소만 지정한다.
 export const metadata: Metadata = {
   alternates: { canonical: "/" },
+  openGraph: pageOpenGraph({
+    title: DEFAULT_TITLE,
+    description: DEFAULT_DESCRIPTION,
+    url: "/",
+  }),
+};
+
+// 사이트 정보(JSON-LD). 구글은 WebSite 정보로 검색 결과에 사이트 이름("holyhabit")을 표시하고,
+// Organization 정보로 로고와 공식 SNS를 연결한다. 메인 페이지에만 넣는다.
+const siteJsonLd = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "WebSite",
+      name: SITE_NAME,
+      alternateName: ["홀리해빗", "holy habit"],
+      url: `${SITE_URL}/`,
+      inLanguage: "ko-KR",
+    },
+    {
+      "@type": "Organization",
+      name: SITE_NAME,
+      url: `${SITE_URL}/`,
+      logo: `${SITE_URL}/icon.png`,
+      ...(SOCIAL_LINKS.length > 0 && { sameAs: SOCIAL_LINKS.map((l) => l.url) }),
+    },
+  ],
 };
 
 // 이미지 배치: full = 텍스트 아래 전체 폭, right/left = 텍스트 옆
@@ -167,6 +202,13 @@ function SectionText({ section }: { section: Section }) {
 export default function HomePage() {
   return (
     <div className="bg-white">
+      <script
+        type="application/ld+json"
+        // "<"를 이스케이프해서 값에 "</script>"가 들어가도 태그가 깨지지 않게 한다.
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(siteJsonLd).replace(/</g, "\\u003c"),
+        }}
+      />
       {/* 히어로: 페이지의 유일한 h1 */}
       <header className="bg-black px-6 pb-28 pt-40 md:px-10 md:pb-40 md:pt-56">
         <div className="mx-auto max-w-[1200px]">

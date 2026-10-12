@@ -6,6 +6,8 @@ import Image from "next/image";
 import { createPost, updatePost, uploadImage, deleteImageByUrl } from "@/app/actions";
 import RichTextEditor from "@/components/RichTextEditor";
 import SeoHelper from "@/components/SeoHelper";
+import CtaEditor, { type CtaPostOption } from "@/components/CtaEditor";
+import type { PostCta } from "@/lib/cta";
 import type { Post } from "@/lib/posts";
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
@@ -24,9 +26,11 @@ function suggestSlug(title: string) {
 type Props = {
   mode: "create" | "edit";
   initialPost?: Post;
+  // CTA "다른 글 추천"에서 고를 수 있는 글 목록
+  postOptions: CtaPostOption[];
 };
 
-export default function AdminPostForm({ mode, initialPost }: Props) {
+export default function AdminPostForm({ mode, initialPost, postOptions }: Props) {
   const router = useRouter();
   const coverInputRef = useRef<HTMLInputElement>(null);
 
@@ -38,6 +42,7 @@ export default function AdminPostForm({ mode, initialPost }: Props) {
   const [coverImageUrl, setCoverImageUrl] = useState<string | null>(
     initialPost?.imageUrl ?? null
   );
+  const [cta, setCta] = useState<PostCta | null>(initialPost?.cta ?? null);
 
   const [coverUploading, setCoverUploading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -111,7 +116,7 @@ export default function AdminPostForm({ mode, initialPost }: Props) {
     setSubmitting(true);
     try {
       if (mode === "create") {
-        await createPost({ title, slug, eyebrow, bodyHtml, imageUrl: coverImageUrl });
+        await createPost({ title, slug, eyebrow, bodyHtml, imageUrl: coverImageUrl, cta });
       } else {
         await updatePost({
           originalSlug: initialPost!.slug,
@@ -120,6 +125,7 @@ export default function AdminPostForm({ mode, initialPost }: Props) {
           eyebrow,
           bodyHtml,
           imageUrl: coverImageUrl,
+          cta,
         });
       }
       setDone(true);
@@ -246,6 +252,8 @@ export default function AdminPostForm({ mode, initialPost }: Props) {
               <RichTextEditor onChange={setBodyHtml} initialContent={initialPost?.body} />
             </div>
           </div>
+
+          <CtaEditor value={cta} onChange={setCta} postOptions={postOptions} />
 
           {error && (
             <p className="rounded-lg bg-red-50 px-4 py-2 text-[14px] text-red-600">

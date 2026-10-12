@@ -4,6 +4,7 @@ import { updateTag } from "next/cache";
 import { createSupabaseAdminClient } from "@/lib/supabase";
 import { sanitizePostHtml } from "@/lib/sanitize";
 import { requireAdmin } from "@/lib/auth";
+import { parseCta, type PostCta } from "@/lib/cta";
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 
@@ -23,12 +24,27 @@ function checkImageUrl(url: string | null) {
   return url;
 }
 
+// 글 하단 CTA. 입력이 있는데 형식이 맞지 않으면 조용히 버리지 않고 알려준다.
+function checkCta(cta: PostCta | null | undefined) {
+  if (!cta) return null;
+  const parsed = parseCta(cta);
+  if (!parsed) {
+    throw new Error(
+      cta.type === "link"
+        ? "CTA 링크 버튼의 버튼 글자와 링크(https:// 또는 /로 시작)를 확인해주세요."
+        : "CTA로 추천할 글을 하나 이상 골라주세요."
+    );
+  }
+  return parsed;
+}
+
 type CreatePostInput = {
   title: string;
   slug: string;
   eyebrow: string;
   bodyHtml: string;
   imageUrl: string | null;
+  cta: PostCta | null;
 };
 
 type UpdatePostInput = CreatePostInput & {
@@ -63,6 +79,7 @@ export async function createPost(input: CreatePostInput) {
     eyebrow,
     title,
     body: bodyHtml,
+    cta: checkCta(input.cta),
     image_url: checkImageUrl(input.imageUrl),
   });
 
@@ -117,6 +134,7 @@ export async function updatePost(input: UpdatePostInput) {
       eyebrow,
       title,
       body: bodyHtml,
+      cta: checkCta(input.cta),
       image_url: checkImageUrl(input.imageUrl),
     })
     .eq("slug", originalSlug)
