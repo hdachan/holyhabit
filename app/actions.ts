@@ -136,6 +136,9 @@ export async function updatePost(input: UpdatePostInput) {
       body: bodyHtml,
       cta: checkCta(input.cta),
       image_url: checkImageUrl(input.imageUrl),
+      // 수정 시각. sitemap lastmod·JSON-LD dateModified로 나가서
+      // 검색엔진이 "이 글이 바뀌었다"를 알고 다시 수집하게 한다.
+      updated_at: new Date().toISOString(),
     })
     .eq("slug", originalSlug)
     .select("slug");

@@ -106,6 +106,17 @@ export default async function NewsDetailPage({ params }: PageProps) {
     },
   };
 
+  // 경로 정보(JSON-LD). 구글 검색 결과에 주소 대신 "holyhabit › 콘텐츠 › 글 제목" 경로로 표시될 수 있다.
+  const breadcrumbJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: SITE_NAME, item: `${SITE_URL}/` },
+      { "@type": "ListItem", position: 2, name: "콘텐츠", item: `${SITE_URL}/news` },
+      { "@type": "ListItem", position: 3, name: item.seoTitle },
+    ],
+  };
+
   return (
     <div className="min-h-screen bg-white">
       <script
@@ -113,6 +124,12 @@ export default async function NewsDetailPage({ params }: PageProps) {
         // "<"를 이스케이프해서 글 제목·요약에 "</script>"가 들어가도 태그가 깨지지 않게 한다.
         dangerouslySetInnerHTML={{
           __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c"),
+        }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(breadcrumbJsonLd).replace(/</g, "\\u003c"),
         }}
       />
       <main className="bg-[#f5f5f7]">

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { htmlToText, stripHtmlToExcerpt } from "@/lib/text";
+import { checkAlt, extractAlts } from "@/lib/alt";
 import { SITE_NAME } from "@/lib/site";
 
 // 글쓰기 화면 옆에서 검색 노출 조건을 실시간으로 검사하는 도우미.
@@ -94,6 +95,11 @@ const TIPS: Record<string, Tip> = {
   },
   cover: {
     why: "대표 사진은 검색 결과 썸네일과 카톡 미리보기에 쓰여요. 없으면 기본 로고가 나가요.",
+  },
+  "image-alt": {
+    why: "검색엔진은 사진을 볼 수 없어서 사진 설명(alt)으로 내용을 이해해요. 설명이 있어야 구글·네이버 이미지 검색에도 나와요. 한국어로, 사진에 보이는 것을 한 문장(100자 이내)으로 쓰세요. \"사진\", \"이미지\"라는 말은 빼고요. 본문의 사진을 클릭하면 에디터 위에 설명 칸이 나와요.",
+    bad: "사진1, IMG_2024.png, 헬스장 매너 헬스장 매너 헬스장",
+    good: "운동 후 덤벨을 제자리에 정리하는 모습",
   },
   "internal-link": {
     why: "관련된 내 글로 링크를 걸면 검색엔진이 다른 글도 쉽게 발견해요. 링크 글자에 키워드를 넣으세요.",
@@ -252,7 +258,29 @@ function runChecks(
     coverImageUrl ? "검색 썸네일·공유 미리보기에 쓰여요." : "없으면 기본 로고가 미리보기로 나가요."
   );
 
-  const hasInternalLink = /<a[^>]+href="[^"]*\/news\/[^"]+"/.test(bodyHtml);
+  // 본문 사진 설명(alt): 에디터의 사진 설명 칸과 같은 기준(lib/alt.ts)으로 검사
+  const alts = extractAlts(bodyHtml);
+  if (alts.length > 0) {
+    const missing = alts.filter((a) => !a.trim()).length;
+    const weak = alts.filter((a) => a.trim() && !checkAlt(a).ok).length;
+    add(
+      "image-alt",
+      "본문 사진 설명",
+      missing + weak === 0 ? "pass" : "warn",
+      missing + weak === 0
+        ? `사진 ${alts.length}장 모두 설명이 좋아요.`
+        : [
+            `사진 ${alts.length}장 중`,
+            missing > 0 && `${missing}장은 설명 없음`,
+            weak > 0 && `${weak}장은 설명 보완 필요`,
+            "— 본문의 사진을 클릭하면 고칠 수 있어요.",
+          ]
+            .filter(Boolean)
+            .join(" ")
+    );
+  }
+
+  const hasInternalLink =/<a[^>]+href="[^"]*\/news\/[^"]+"/.test(bodyHtml);
   add(
     "internal-link",
     "내 글 링크",
