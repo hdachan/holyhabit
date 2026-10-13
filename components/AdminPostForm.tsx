@@ -5,29 +5,21 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { createPost, updatePost, uploadImage, deleteImageByUrl } from "@/app/actions";
 import RichTextEditor from "@/components/RichTextEditor";
-import SeoHelper from "@/components/SeoHelper";
-import CtaEditor, { type CtaPostOption } from "@/components/CtaEditor";
+import SeoHelper, { SeoChecks, runSeoChecks } from "@/components/SeoHelper";
+import CtaEditor from "@/components/CtaEditor";
+import RelatedPostsEditor from "@/components/RelatedPostsEditor";
+import { requiredRelatedCount, type PostOption } from "@/lib/related";
 import type { PostCta } from "@/lib/cta";
 import type { Post } from "@/lib/posts";
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const SLUG_PATTERN = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 
-function suggestSlug(title: string) {
-  return title
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9\s-]/g, "")
-    .replace(/\s+/g, "-")
-    .replace(/-+/g, "-")
-    .slice(0, 60);
-}
-
 type Props = {
   mode: "create" | "edit";
   initialPost?: Post;
   // CTA "다른 글 추천"에서 고를 수 있는 글 목록
-  postOptions: CtaPostOption[];
+  postOptions: PostOption[];
 };
 
 export default function AdminPostForm({ mode, initialPost, postOptions }: Props) {
@@ -36,29 +28,36 @@ export default function AdminPostForm({ mode, initialPost, postOptions }: Props)
 
   const [title, setTitle] = useState(initialPost?.title ?? "");
   const [slug, setSlug] = useState(initialPost?.slug ?? "");
-  const [slugTouched, setSlugTouched] = useState(mode === "edit");
   const [eyebrow, setEyebrow] = useState(initialPost?.eyebrow ?? "업데이트");
   const [bodyHtml, setBodyHtml] = useState(initialPost?.body ?? "");
   const [coverImageUrl, setCoverImageUrl] = useState<string | null>(
     initialPost?.imageUrl ?? null
   );
   const [cta, setCta] = useState<PostCta | null>(initialPost?.cta ?? null);
+  // 연관 콘텐츠(필수). 지워진 글이 남아 있으면 빼고 시작한다.
+  const [relatedSlugs, setRelatedSlugs] = useState<string[]>(
+    (initialPost?.relatedSlugs ?? []).filter((s) => postOptions.some((o) => o.slug === s))
+  );
+  const requiredRelated = requiredRelatedCount(postOptions.length);
+
+  // 검색 노출 도우미: 검색어(①)·다른 표현(②)은 검사용이라 저장하지 않는다.
+  // 검사는 한 번만 돌리고, 결과를 오른쪽 패널과 각 입력 칸 아래에 나눠서 보여준다.
+  const [seoKeyword, setSeoKeyword] = useState("");
+  const [seoRelated, setSeoRelated] = useState("");
+  const seoInput = { title, slug, bodyHtml, coverImageUrl };
+  const seoChecks = runSeoChecks(seoInput, seoKeyword, seoRelated);
+  const checksFor = (group: string) => seoChecks.filter((c) => c.group === group);
 
   const [coverUploading, setCoverUploading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
 
-  function handleTitleChange(value: string) {
-    setTitle(value);
-    if (!slugTouched) {
-      setSlug(suggestSlug(value));
-    }
-  }
-
+  // 주소(slug)는 직접 입력한다. 제목이 대부분 한글이라 자동으로 만들면
+  // 한글이 모두 지워져 "-7" 같은 의미 없는 값이 들어갔다.
+  // 입력 편의를 위해 대문자는 소문자로, 띄어쓰기는 하이픈(-)으로만 바꿔준다.
   function handleSlugChange(value: string) {
-    setSlugTouched(true);
-    setSlug(value.toLowerCase());
+    setSlug(value.toLowerCase().replace(/\s+/g, "-"));
   }
 
   async function handleCoverPick(e: React.ChangeEvent<HTMLInputElement>) {
@@ -113,10 +112,24 @@ export default function AdminPostForm({ mode, initialPost, postOptions }: Props)
       return;
     }
 
+    if (relatedSlugs.length !== requiredRelated) {
+      setError(`연관 콘텐츠를 ${requiredRelated}개 골라주세요. (지금 ${relatedSlugs.length}개)`);
+      document.getElementById("related-posts")?.scrollIntoView({ behavior: "smooth", block: "center" });
+      return;
+    }
+
     setSubmitting(true);
     try {
       if (mode === "create") {
-        await createPost({ title, slug, eyebrow, bodyHtml, imageUrl: coverImageUrl, cta });
+        await createPost({
+          title,
+          slug,
+          eyebrow,
+          bodyHtml,
+          imageUrl: coverImageUrl,
+          cta,
+          relatedSlugs,
+        });
       } else {
         await updatePost({
           originalSlug: initialPost!.slug,
@@ -126,6 +139,7 @@ export default function AdminPostForm({ mode, initialPost, postOptions }: Props)
           bodyHtml,
           imageUrl: coverImageUrl,
           cta,
+          relatedSlugs,
         });
       }
       setDone(true);
@@ -148,10 +162,12 @@ export default function AdminPostForm({ mode, initialPost, postOptions }: Props)
 
         <div className="lg:order-2">
           <SeoHelper
-            title={title}
-            slug={slug}
-            bodyHtml={bodyHtml}
-            coverImageUrl={coverImageUrl}
+            input={seoInput}
+            checks={seoChecks}
+            keyword={seoKeyword}
+            onKeywordChange={setSeoKeyword}
+            related={seoRelated}
+            onRelatedChange={setSeoRelated}
           />
         </div>
 
@@ -167,27 +183,33 @@ export default function AdminPostForm({ mode, initialPost, postOptions }: Props)
             />
           </div>
 
-          <div>
+          <div id="seo-title" className="scroll-mt-6">
             <label className="mb-1 block text-sm font-medium text-[#6e6e73]">
               제목
             </label>
             <textarea
               value={title}
-              onChange={(e) => handleTitleChange(e.target.value)}
+              onChange={(e) => setTitle(e.target.value)}
               required
               rows={2}
               className="w-full min-w-0 resize-y rounded-lg border border-black/10 bg-white px-4 py-2 text-[#1d1d1f]"
             />
+            <SeoChecks checks={checksFor("title")} />
           </div>
 
-          <div>
+          <div id="seo-slug" className="scroll-mt-6">
             <label className="mb-1 block text-sm font-medium text-[#6e6e73]">
-              주소 (slug) — 한글 불가, 영문 소문자·숫자·- 만 가능
+              주소 (slug)
             </label>
+            <p className="mb-1.5 text-[12px] text-[#8e8e93]">
+              글 내용을 나타내는 영어 단어를 하이픈(-)으로 이어서 직접 적어요.{" "}
+              <b className="font-semibold text-[#1d1d1f]">한글은 쓸 수 없어요.</b>{" "}
+              영문 소문자·숫자·-만 가능하고, 띄어쓰기는 자동으로 -로 바뀌어요.
+            </p>
             <input
               value={slug}
               onChange={(e) => handleSlugChange(e.target.value)}
-              placeholder="my-first-post"
+              placeholder="예: 헬스장 매너 → gym-etiquette-tips"
               required
               className="w-full min-w-0 rounded-lg border border-black/10 bg-white px-4 py-2 font-mono text-[14px] text-[#1d1d1f]"
             />
@@ -200,9 +222,10 @@ export default function AdminPostForm({ mode, initialPost, postOptions }: Props)
                 주소를 바꾸면 기존 링크(북마크, 검색 결과 등)가 깨질 수 있어요.
               </p>
             )}
+            <SeoChecks checks={checksFor("slug")} />
           </div>
 
-          <div>
+          <div id="seo-cover" className="scroll-mt-6">
             <label className="mb-1 block text-sm font-medium text-[#6e6e73]">
               대표이미지 (5MB 이하)
             </label>
@@ -241,19 +264,31 @@ export default function AdminPostForm({ mode, initialPost, postOptions }: Props)
                 onChange={handleCoverPick}
               />
             </div>
+            <SeoChecks checks={checksFor("cover")} />
           </div>
 
-          <div>
+          <div id="seo-body" className="scroll-mt-6">
             <label className="mb-1 block text-sm font-medium text-[#6e6e73]">
               본문 (이미지는 툴바의 🖼️ 버튼으로 삽입, 5MB 이하)
             </label>
             {/* 에디터 내부 툴바가 넘칠 경우를 대비해 가로 스크롤 허용 */}
             <div className="w-full min-w-0 overflow-x-auto">
-              <RichTextEditor onChange={setBodyHtml} initialContent={initialPost?.body} />
+              <RichTextEditor
+                onChange={setBodyHtml}
+                initialContent={initialPost?.body}
+                postOptions={postOptions}
+              />
             </div>
+            <SeoChecks checks={checksFor("body")} />
           </div>
 
-          <CtaEditor value={cta} onChange={setCta} postOptions={postOptions} />
+          <CtaEditor value={cta} onChange={setCta} />
+
+          <RelatedPostsEditor
+            value={relatedSlugs}
+            onChange={setRelatedSlugs}
+            options={postOptions}
+          />
 
           {error && (
             <p className="rounded-lg bg-red-50 px-4 py-2 text-[14px] text-red-600">

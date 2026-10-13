@@ -13,6 +13,8 @@ import LinkExtension from "@tiptap/extension-link";
 import PlaceholderExtension from "@tiptap/extension-placeholder";
 import { uploadImage } from "@/app/actions";
 import { checkAlt } from "@/lib/alt";
+import type { PostOption } from "@/lib/related";
+import LinkDialog from "@/components/LinkDialog";
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 
@@ -46,9 +48,12 @@ function ToolbarButton({
 export default function RichTextEditor({
   initialContent = "",
   onChange,
+  postOptions = [],
 }: {
   initialContent?: string;
   onChange: (html: string) => void;
+  // 🔗 "내 글 고르기"에서 고를 수 있는 글 목록
+  postOptions?: PostOption[];
 }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
@@ -61,7 +66,13 @@ export default function RichTextEditor({
       ImageExtension.configure({
         HTMLAttributes: { class: "rounded-xl" },
       }),
-      LinkExtension.configure({ openOnClick: false }),
+      // 기본값은 모든 링크에 target="_blank" rel="nofollow ..."를 붙인다.
+      // 내 글 링크에 nofollow가 붙으면 검색엔진이 따라가지 않으므로 여기서는 빼고,
+      // 저장할 때(lib/sanitize.ts) 외부 링크에만 새 탭 열기를 붙인다.
+      LinkExtension.configure({
+        openOnClick: false,
+        HTMLAttributes: { target: null, rel: null },
+      }),
       PlaceholderExtension.configure({
         placeholder: "본문을 입력하세요...",
       }),
@@ -117,6 +128,7 @@ export default function RichTextEditor({
       uploading={uploading}
       error={error}
       onImagePick={handleImagePick}
+      postOptions={postOptions}
     />
   );
 }
@@ -183,14 +195,17 @@ function EditorBody({
   uploading,
   error,
   onImagePick,
+  postOptions,
 }: {
   editor: Editor;
   fileInputRef: React.RefObject<HTMLInputElement | null>;
   uploading: boolean;
   error: string | null;
   onImagePick: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  postOptions: PostOption[];
 }) {
   const handleImagePick = onImagePick;
+  const [linkOpen, setLinkOpen] = useState(false);
   return (
     <div className="overflow-hidden rounded-xl border border-black/10 bg-white">
       {/* 툴바 */}
@@ -251,10 +266,7 @@ function EditorBody({
         <ToolbarButton
           label="링크"
           active={editor.isActive("link")}
-          onClick={() => {
-            const url = window.prompt("링크 URL을 입력하세요");
-            if (url) editor.chain().focus().setLink({ href: url }).run();
-          }}
+          onClick={() => setLinkOpen(true)}
         >
           🔗
         </ToolbarButton>
@@ -277,6 +289,14 @@ function EditorBody({
       </div>
 
       <ImageAltField editor={editor} />
+
+      {linkOpen && (
+        <LinkDialog
+          editor={editor}
+          postOptions={postOptions}
+          onClose={() => setLinkOpen(false)}
+        />
+      )}
 
       <EditorContent editor={editor} />
 

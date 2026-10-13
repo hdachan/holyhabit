@@ -52,6 +52,19 @@ body {
 .post-body li {
   margin-bottom: 0.4em;
 }
+/* 에디터(Tiptap)는 목록 항목 글자를 <p>로 감싸서 저장한다.
+   위의 문단 여백(1.25em)이 그대로 적용되면 항목 사이가 문단처럼 벌어지므로 목록 안에서는 뺀다.
+   인용구 안의 마지막 문단도 같은 이유로 아래 여백을 뺀다. */
+.post-body li > p,
+.post-body blockquote > p:last-child {
+  margin-bottom: 0;
+}
+/* 목록 안에 목록(들여쓰기)이 들어간 경우 위아래 간격만 살짝 */
+.post-body li > ul,
+.post-body li > ol {
+  margin-top: 0.4em;
+  margin-bottom: 0;
+}
 .post-body blockquote {
   margin: 1.25em 0;
   border-left: 3px solid #d2d2d7;

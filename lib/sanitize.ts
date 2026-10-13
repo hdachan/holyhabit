@@ -18,15 +18,23 @@ export function sanitizePostHtml(html: string) {
     },
     allowedSchemes: ["http", "https", "mailto"],
     allowedSchemesByTag: { img: ["https"] },
-    // 새 창으로 열리는 링크가 원래 페이지를 조작하지 못하게 막는다.
     transformTags: {
-      a: (tagName, attribs) => ({
-        tagName,
-        attribs:
-          attribs.target === "_blank"
-            ? { ...attribs, rel: "noopener noreferrer nofollow" }
-            : attribs,
-      }),
+      // 내 사이트 링크(/...)는 같은 탭에서 열고 rel을 붙이지 않는다.
+      //   nofollow가 붙으면 검색엔진이 내 글끼리의 링크를 따라가지 않아 내부 링크 효과가 사라진다.
+      // 외부 링크는 새 탭으로 열고, 원래 페이지를 조작하지 못하게 noopener를 붙인다.
+      a: (tagName, attribs) => {
+        const href = attribs.href ?? "";
+        const external = /^(https?:)?\/\//i.test(href);
+        const { target: _target, rel: _rel, ...rest } = attribs;
+        return {
+          tagName,
+          // 외부 주소(http·https)일 때만 새 탭. 내 사이트 주소, 메일 주소,
+          // 그리고 위험해서 곧 지워질 주소(javascript: 등)에는 아무것도 붙이지 않는다.
+          attribs: !external
+            ? rest
+            : { ...rest, target: "_blank", rel: "noopener noreferrer" },
+        };
+      },
     },
   });
 }

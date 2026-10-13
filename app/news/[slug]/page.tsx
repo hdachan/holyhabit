@@ -83,9 +83,8 @@ export default async function NewsDetailPage({ params }: PageProps) {
     notFound();
   }
 
-  const related = await getRelatedPosts(item.slug, 3);
-  // CTA "다른 글 추천"에 쓸 글 목록 (캐시된 목록이라 추가 조회 없음)
-  const allPosts = item.cta?.type === "posts" ? await getAllPosts() : [];
+  // 연관 콘텐츠: 글쓴이가 고른 글 3개 (고른 글이 없는 예전 글은 최신 글로 채움)
+  const related = await getRelatedPosts(item, 3);
 
   // 구조화 데이터(JSON-LD). 검색엔진에 "이 페이지는 기사"라고 알려서
   // 검색 결과에 발행일·작성자·대표 이미지가 정확히 표시되도록 돕는다.
@@ -202,7 +201,7 @@ export default async function NewsDetailPage({ params }: PageProps) {
         {/* 글 하단 CTA — 관리자 화면에서 글마다 설정. 없으면 아무것도 나오지 않는다 */}
         {item.cta && (
           <div className="mx-auto max-w-[760px] px-[18px] pb-12">
-            <PostCtaBox post={item} allPosts={allPosts} />
+            <PostCtaBox post={item} />
           </div>
         )}
 

@@ -2,6 +2,7 @@ import { unstable_cache } from "next/cache";
 import { createSupabaseClient } from "./supabase";
 import { stripHtmlToExcerpt } from "./text";
 import { parseCta, type PostCta } from "./cta";
+import { parseRelatedSlugs } from "./related";
 
 export type Post = {
   slug: string;
@@ -19,6 +20,7 @@ export type Post = {
   body: string; // Tiptap 에디터에서 나온 HTML
   excerpt: string; // 카드 미리보기용 — 본문에서 태그를 뺀 짧은 요약
   cta: PostCta | null; // 글 하단 CTA (없으면 null)
+  relatedSlugs: string[]; // 글쓴이가 고른 연관 콘텐츠 (없으면 빈 배열 → 자동 추천)
 };
 
 // 서버(Vercel)는 UTC라서 getDate()를 쓰면 한국 시간 오전 9시 전 글이 전날로 표시된다.
@@ -43,6 +45,7 @@ function toPost(row: {
   created_at: string;
   updated_at?: string | null;
   cta?: unknown;
+  related_slugs?: unknown;
 }): Post {
   return {
     slug: row.slug,
@@ -59,6 +62,7 @@ function toPost(row: {
     body: row.body,
     excerpt: stripHtmlToExcerpt(row.body),
     cta: parseCta(row.cta),
+    relatedSlugs: parseRelatedSlugs(row.related_slugs),
   };
 }
 
@@ -99,10 +103,17 @@ export async function getPost(slug: string): Promise<Post | undefined> {
   return posts.find((p) => p.slug === slug);
 }
 
-export async function getRelatedPosts(
-  slug: string,
-  count = 3
-): Promise<Post[]> {
+/**
+ * 글 아래 "연관 콘텐츠". 글쓴이가 고른 글(relatedSlugs)을 고른 순서대로 보여준다.
+ * 고른 글이 없는 예전 글이거나 고른 글이 지워졌으면, 모자란 만큼 최신 글로 채운다.
+ * (어떤 글도 다른 글로 이어지는 길이 없는 막다른 페이지가 되지 않게)
+ */
+export async function getRelatedPosts(post: Post, count = 3): Promise<Post[]> {
   const posts = await getAllPosts();
-  return posts.filter((p) => p.slug !== slug).slice(0, count);
+  const others = posts.filter((p) => p.slug !== post.slug);
+  const picked = post.relatedSlugs
+    .map((s) => others.find((p) => p.slug === s))
+    .filter((p): p is Post => !!p);
+  const fill = others.filter((p) => !picked.includes(p));
+  return [...picked, ...fill].slice(0, count);
 }

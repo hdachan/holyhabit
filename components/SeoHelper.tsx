@@ -5,19 +5,58 @@ import { htmlToText, stripHtmlToExcerpt } from "@/lib/text";
 import { checkAlt, extractAlts } from "@/lib/alt";
 import { SITE_NAME } from "@/lib/site";
 
-// 글쓰기 화면 옆에서 검색 노출 조건을 실시간으로 검사하는 도우미.
+// 글쓰기 화면의 검색 노출 도우미.
 // 기준은 "글 쓸 때 키워드 꿀팁" 가이드와 같다. 검사만 하고 저장을 막지는 않는다.
+// - SeoChecks: 각 입력 칸(제목·주소·대표 사진·본문) 바로 아래에 그 칸의 검사 결과를 보여준다.
+// - SeoHelper: 오른쪽 패널. 검색어 입력(①②), 영역별 점수, 검색 결과 미리보기.
 // 항목마다 ⓘ를 누르면 이유와 예시가 펼쳐진다.
 
-type Status = "pass" | "warn" | "fail";
-type Check = { id: string; label: string; status: Status; detail: string };
+// tip: 선택 사항. 안 해도 되는 항목이라 점수에 넣지 않고, 통과 항목과 함께 접어서 보여준다.
+type Status = "pass" | "warn" | "fail" | "tip";
+export type CheckGroup = "title" | "slug" | "cover" | "body";
+export type Check = {
+  id: string;
+  label: string;
+  status: Status;
+  detail: string;
+  group: CheckGroup;
+  // 본문 검사는 항목이 많아서 작은 묶음으로 한 번 더 나눈다.
+  section?: string;
+};
 type Tip = { why: string; bad?: string; good?: string };
 
-type Props = {
+export type SeoInput = {
   title: string;
   slug: string;
   bodyHtml: string;
   coverImageUrl: string | null;
+};
+
+// 검사 항목이 어느 입력 칸에 속하는지
+const GROUP_OF: Record<string, { group: CheckGroup; section?: string }> = {
+  "title-length": { group: "title" },
+  "title-keyword": { group: "title" },
+  "title-number": { group: "title" },
+  slug: { group: "slug" },
+  cover: { group: "cover" },
+  "opening-keyword": { group: "body", section: "검색어" },
+  "keyword-count": { group: "body", section: "검색어" },
+  related: { group: "body", section: "검색어" },
+  "heading-keyword": { group: "body", section: "검색어" },
+  "closing-keyword": { group: "body", section: "검색어" },
+  headings: { group: "body", section: "구성" },
+  "heading-density": { group: "body", section: "구성" },
+  "body-length": { group: "body", section: "구성" },
+  list: { group: "body", section: "구성" },
+  "image-alt": { group: "body", section: "사진·링크" },
+  "internal-link": { group: "body", section: "사진·링크" },
+};
+
+export const GROUP_LABEL: Record<CheckGroup, string> = {
+  title: "제목",
+  slug: "주소",
+  cover: "대표 사진",
+  body: "본문",
 };
 
 // 검색 결과 제목은 한글 약 30자에서 잘린다. 뒤에 " | holyhabit"이 붙으므로 글 제목은 25자 안쪽이 안전.
@@ -26,6 +65,8 @@ const TITLE_MAX = 32;
 // 검색 결과 요약문으로 실제 보이는 앞부분 길이
 const SNIPPET_VISIBLE = 80;
 const MIN_BODY_CHARS = 1500;
+// 글 주소 규칙 (app/actions.ts의 SLUG_PATTERN과 같아야 한다)
+const SLUG_PATTERN = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 // 소제목 하나가 맡기 적당한 글자 수 (문단 3~5개 ≈ 500~700자)
 const CHARS_PER_HEADING = 700;
 // "마지막 문단"으로 볼 끝부분 길이
@@ -59,9 +100,9 @@ const TIPS: Record<string, Tip> = {
     good: "운동 습관이 3일을 못 가는 이유는... (소제목) 운동 습관을 이어가는 방법",
   },
   related: {
-    why: "같은 말만 반복하지 말고 비슷한 말을 섞으면 더 많은 검색어에 걸리고, 글도 자연스러워져요.",
-    bad: "운동 습관 / 운동 습관 / 운동 습관",
-    good: "메인: 운동 습관 · 비슷한 말: 꾸준히 운동하기, 운동 루틴, 작심삼일",
+    why: "같은 말이 너무 자주 나오는 부분 몇 군데를 뜻이 같은 다른 말로 바꿔요. 다른 말로 검색하는 사람에게도 글이 걸리고, 반복이 줄어 글도 자연스러워져요. 단, 제목·첫 문장·소제목의 ① 검색어는 그대로 두세요. 다른 표현은 네이버 자동완성과 연관 검색어에서 찾을 수 있어요.",
+    bad: "헬스장 매너를 지키는 건 중요합니다. 헬스장 매너를 모르면 눈치가 보이죠. 헬스장 매너, 어렵지 않아요.",
+    good: "헬스장 매너를 지키는 건 중요합니다. 헬스장 에티켓을 모르면 눈치가 보이죠. 헬스장 예절, 어렵지 않아요.",
   },
   headings: {
     why: "검색엔진은 소제목(H2, H3)을 \"이 글의 목차\"로 읽어요. 굵은 글씨(B)는 소제목이 아니에요. 글 제목이 이미 H1이라 본문은 H2부터 써야 해요.",
@@ -89,8 +130,8 @@ const TIPS: Record<string, Tip> = {
     good: "헬스장 매너 7가지\n1. 사용한 기구는 제자리에\n2. 땀은 닦고 가기\n3. ...",
   },
   slug: {
-    why: "주소에도 키워드가 들어가면 좋아요. 영문 소문자, 숫자, 하이픈만 쓸 수 있어요. 한 번 정하면 바꾸지 마세요. 바뀌면 검색엔진이 처음부터 다시 수집해요.",
-    bad: "column-006, post1",
+    why: "주소에도 키워드가 들어가면 좋아요. 영문 소문자, 숫자, 하이픈(-)만 쓸 수 있고 한글은 안 돼요. 한글 주소는 공유할 때 %ED%97%AC...처럼 깨져 보여요. 한 번 정하면 바꾸지 마세요. 바뀌면 검색엔진이 처음부터 다시 수집해요.",
+    bad: "헬스장-매너, column-006, post1",
     good: "gym-beginner-routine, exercise-habit-tips",
   },
   cover: {
@@ -102,7 +143,7 @@ const TIPS: Record<string, Tip> = {
     good: "운동 후 덤벨을 제자리에 정리하는 모습",
   },
   "internal-link": {
-    why: "관련된 내 글로 링크를 걸면 검색엔진이 다른 글도 쉽게 발견해요. 링크 글자에 키워드를 넣으세요.",
+    why: "선택 사항이에요. 글 아래 연관 콘텐츠로 다른 글과 이미 연결되지만, 문장 속 링크는 앞뒤 문맥이 있어서 검색엔진이 두 글의 관계를 더 잘 이해해요. 글자를 선택하고 🔗를 눌러 /news/글주소(예: /news/column-002)를 넣으면 돼요. 글 주소는 글 관리 목록에서 볼 수 있어요. 링크 글자에는 내용을 담으세요.",
     bad: "자세한 내용은 [여기를 클릭]",
     good: "헬스장에 처음 간다면 [헬스장 매너 총정리]도 함께 읽어보세요.",
   },
@@ -123,11 +164,23 @@ function countOccurrences(text: string, keyword: string) {
   return normalize(text).split(normalize(keyword)).length - 1;
 }
 
+/** 검색어(①)·다른 표현(② 쉼표 구분 문자열)을 받아 모든 검사를 실행한다. */
+export function runSeoChecks(input: SeoInput, keyword: string, related: string): Check[] {
+  const relatedWords = related
+    .split(",")
+    .map((w) => w.trim())
+    .filter(Boolean);
+  return runChecks(input, keyword, relatedWords).map((c) => ({
+    ...c,
+    ...GROUP_OF[c.id],
+  }));
+}
+
 function runChecks(
-  { title, slug, bodyHtml, coverImageUrl }: Props,
+  { title, slug, bodyHtml, coverImageUrl }: SeoInput,
   keyword: string,
   relatedWords: string[]
-): Check[] {
+): Omit<Check, "group" | "section">[] {
   const oneLineTitle = title.replace(/\s+/g, " ").trim();
   const bodyText = htmlToText(bodyHtml);
   const bodyChars = bodyText.replace(/\s/g, "").length;
@@ -137,7 +190,7 @@ function runChecks(
   const h1Count = (bodyHtml.match(/<h1[\s>]/g) ?? []).length;
   const h2Count = (bodyHtml.match(/<h2[\s>]/g) ?? []).length;
   const kw = keyword.trim();
-  const checks: Check[] = [];
+  const checks: Omit<Check, "group" | "section">[] = [];
   const add = (id: string, label: string, status: Status, detail: string) =>
     checks.push({ id, label, status, detail });
 
@@ -163,13 +216,13 @@ function runChecks(
   add(
     "title-number",
     "제목에 숫자",
-    /\d/.test(oneLineTitle) ? "pass" : "warn",
-    /\d/.test(oneLineTitle) ? "숫자가 있어요." : "선택 사항 — \"3가지\", \"7가지\"처럼 숫자를 넣으면 클릭률이 올라가요."
+    /\d/.test(oneLineTitle) ? "pass" : "tip",
+    /\d/.test(oneLineTitle) ? "숫자가 있어요." : "\"3가지\", \"7가지\"처럼 숫자를 넣으면 클릭률이 올라가요."
   );
 
   // ── 키워드
   if (!kw) {
-    add("keyword-count", "키워드 검사", "warn", "위에 메인 키워드를 입력하면 제목·첫 문장·소제목·반복 횟수를 검사해요.");
+    add("keyword-count", "검색어 검사", "warn", "위 ①에 검색어를 적으면 제목·첫 문장·소제목·반복 횟수를 검사해요.");
   } else {
     const opening = bodyText.slice(0, SNIPPET_VISIBLE);
     add(
@@ -210,11 +263,11 @@ function runChecks(
   }
 
   if (relatedWords.length === 0) {
-    add("related", "비슷한 말", "warn", "위에 비슷한 말 2~3개를 입력하면 본문에 들어갔는지 검사해요.");
+    add("related", "바꿔 쓸 다른 표현", "tip", "위 ②에 적으면 본문에 몇 번 들어갔는지 세어줘요.");
   } else {
     const missing = relatedWords.filter((w) => countOccurrences(bodyText, w) === 0);
     const summary = relatedWords.map((w) => `${w} ${countOccurrences(bodyText, w)}번`).join(", ");
-    add("related", "비슷한 말", missing.length === 0 ? "pass" : "warn", missing.length === 0 ? summary : `${summary} — 안 나온 말을 자연스럽게 넣어주세요.`);
+    add("related", "바꿔 쓸 다른 표현", missing.length === 0 ? "pass" : "warn", missing.length === 0 ? summary : `${summary} — 반복되는 ① 검색어 몇 군데를 안 나온 말로 바꿔보세요.`);
   }
 
   // ── 소제목·구성
@@ -244,10 +297,14 @@ function runChecks(
   );
 
   const hasList = /<(ul|ol)[\s>]/.test(bodyHtml);
-  add("list", "목록 사용", hasList ? "pass" : "warn", hasList ? "목록이 있어요." : "선택 사항 — 정리할 내용이 있으면 목록(•, 1. 2. 3.)으로 써보세요.");
+  add("list", "목록 사용", hasList ? "pass" : "tip", hasList ? "목록이 있어요." : "정리할 내용이 있으면 목록(•, 1. 2. 3.)으로 써보세요.");
 
   // ── 주소·사진·링크
+  // 저장할 때(app/actions.ts)와 같은 규칙으로 검사한다. 여기서 통과하면 저장도 통과한다.
   if (!slug) add("slug", "글 주소", "fail", "주소(slug)를 입력하세요.");
+  else if (/[ㄱ-ㅎㅏ-ㅣ가-힣]/.test(slug)) add("slug", "글 주소", "fail", "한글은 쓸 수 없어요. 영어 단어로 바꿔주세요. 예: 헬스장 매너 → gym-etiquette");
+  else if (/[^a-z0-9-]/.test(slug)) add("slug", "글 주소", "fail", "영문 소문자, 숫자, 하이픈(-)만 쓸 수 있어요. 특수문자를 지워주세요.");
+  else if (!SLUG_PATTERN.test(slug)) add("slug", "글 주소", "fail", "하이픈(-)은 단어 사이에 하나씩만 쓸 수 있어요. 맨 앞·맨 뒤나 연속(--)은 안 돼요.");
   else if (/^((post|column|news|test)-?)?\d+$/.test(slug)) add("slug", "글 주소", "warn", "번호 대신 영어 키워드로 써주세요. 예: gym-beginner-routine");
   else add("slug", "글 주소", "pass", `/news/${slug}`);
 
@@ -280,18 +337,26 @@ function runChecks(
     );
   }
 
-  const hasInternalLink =/<a[^>]+href="[^"]*\/news\/[^"]+"/.test(bodyHtml);
+  // 본문 속 내 글 링크는 선택 사항. 글 아래 연관 콘텐츠로 다른 글과 이미 연결되기 때문.
+  const hasInternalLink = /<a[^>]+href="[^"]*\/news\/[^"]+"/.test(bodyHtml);
   add(
     "internal-link",
-    "내 글 링크",
-    hasInternalLink ? "pass" : "warn",
-    hasInternalLink ? "다른 글로 연결되는 링크가 있어요." : "관련된 내 글(/news/...) 링크를 하나 걸어주세요."
+    "본문 속 내 글 링크",
+    hasInternalLink ? "pass" : "tip",
+    hasInternalLink
+      ? "본문에 내 다른 글로 가는 링크가 있어요."
+      : "본문 문장 속에 관련된 내 글 링크가 있으면 더 좋아요. 글자를 선택하고 🔗를 눌러 글 주소를 넣으면 돼요."
   );
 
   return checks;
 }
 
-const ICON: Record<Status, string> = { pass: "✅", warn: "⚠️", fail: "❌" };
+const ICON: Record<Status, string> = { pass: "✅", warn: "⚠️", fail: "❌", tip: "💡" };
+
+/** 점수에 들어가는 항목 (선택 사항 제외) */
+export function scored(checks: Check[]) {
+  return checks.filter((c) => c.status !== "tip");
+}
 
 function TipBox({ tip }: { tip: Tip }) {
   return (
@@ -323,23 +388,118 @@ function TipButton({ open, onClick }: { open: boolean; onClick: () => void }) {
   );
 }
 
-export default function SeoHelper(props: Props) {
-  const [keyword, setKeyword] = useState("");
-  const [related, setRelated] = useState("");
-  // 모바일에서는 접어두고, 넓은 화면에서는 항상 펼친다.
-  const [open, setOpen] = useState(false);
-  // 지금 펼쳐진 설명(ⓘ) 하나
+
+function CheckItem({
+  check,
+  openTip,
+  onToggleTip,
+}: {
+  check: Check;
+  openTip: string | null;
+  onToggleTip: (id: string) => void;
+}) {
+  return (
+    <li className="flex gap-2 text-[13px] leading-[1.5]">
+      <span aria-hidden>{ICON[check.status]}</span>
+      <div className="min-w-0 flex-1">
+        <p className="flex items-center font-semibold text-[#1d1d1f]">
+          {check.label}
+          {TIPS[check.id] && (
+            <TipButton open={openTip === check.id} onClick={() => onToggleTip(check.id)} />
+          )}
+        </p>
+        <p className="break-words text-[#6e6e73]">{check.detail}</p>
+        {openTip === check.id && TIPS[check.id] && <TipBox tip={TIPS[check.id]} />}
+      </div>
+    </li>
+  );
+}
+
+/**
+ * 입력 칸 바로 아래에 붙는 검사 결과.
+ * 고칠 것(⚠️ ❌)은 바로 보여주고, 통과한 항목(✅)은 접어둬서 화면을 가볍게 한다.
+ */
+export function SeoChecks({ checks }: { checks: Check[] }) {
   const [openTip, setOpenTip] = useState<string | null>(null);
-  const relatedWords = related
-    .split(",")
-    .map((w) => w.trim())
-    .filter(Boolean);
-  const checks = runChecks(props, keyword, relatedWords);
-  const passed = checks.filter((c) => c.status === "pass").length;
-  const oneLineTitle = props.title.replace(/\s+/g, " ").trim();
-  const snippet = stripHtmlToExcerpt(props.bodyHtml);
+  const [showPassed, setShowPassed] = useState(false);
+  if (checks.length === 0) return null;
 
   const toggleTip = (id: string) => setOpenTip((cur) => (cur === id ? null : id));
+  const todo = checks.filter((c) => c.status === "warn" || c.status === "fail");
+  // 통과한 항목과 선택 사항은 접어둔다.
+  const passed = checks.filter((c) => c.status === "pass");
+  const tips = checks.filter((c) => c.status === "tip");
+  const folded = passed.length + tips.length;
+  const visible = showPassed ? checks : todo;
+
+  // 본문처럼 묶음(section)이 있으면 묶음 이름을 달아서 보여준다.
+  const sections = [...new Set(visible.map((c) => c.section ?? ""))];
+
+  return (
+    <div className="mt-2 rounded-lg border border-black/5 bg-white/70 px-3 py-2.5">
+      {sections.map((section) => (
+        <div key={section} className={section ? "mb-2 last:mb-0" : ""}>
+          {section && (
+            <p className="mb-1.5 text-[11px] font-semibold tracking-[0.04em] text-[#8e8e93]">
+              {section}
+            </p>
+          )}
+          <ul className="flex flex-col gap-2">
+            {visible
+              .filter((c) => (c.section ?? "") === section)
+              .map((check) => (
+                <CheckItem key={check.id} check={check} openTip={openTip} onToggleTip={toggleTip} />
+              ))}
+          </ul>
+        </div>
+      ))}
+
+      {folded > 0 && (
+        <button
+          type="button"
+          onClick={() => setShowPassed((v) => !v)}
+          className={`text-[12px] font-medium text-green-700 hover:underline ${visible.length > 0 ? "mt-2" : ""}`}
+        >
+          {showPassed
+            ? "접기"
+            : [
+                passed.length > 0 &&
+                  (todo.length === 0 ? `✅ 모두 통과 ${passed.length}개` : `✅ 통과 ${passed.length}개`),
+                tips.length > 0 && `💡 선택 ${tips.length}개`,
+              ]
+                .filter(Boolean)
+                .join(" · ") + " 보기"}
+        </button>
+      )}
+    </div>
+  );
+}
+
+/**
+ * 오른쪽 패널: 검색어 입력(①②), 영역별 점수(누르면 해당 칸으로 이동), 검색 결과 미리보기.
+ * 검사 결과 자체는 각 입력 칸 아래(SeoChecks)에 나온다.
+ */
+export default function SeoHelper({
+  input,
+  checks,
+  keyword,
+  onKeywordChange,
+  related,
+  onRelatedChange,
+}: {
+  input: SeoInput;
+  checks: Check[];
+  keyword: string;
+  onKeywordChange: (value: string) => void;
+  related: string;
+  onRelatedChange: (value: string) => void;
+}) {
+  // 모바일에서도 ①② 입력이 중요해서 처음엔 펼쳐 둔다.
+  const [open, setOpen] = useState(true);
+  const passed = checks.filter((c) => c.status === "pass").length;
+  const total = scored(checks).length;
+  const oneLineTitle = input.title.replace(/\s+/g, " ").trim();
+  const snippet = stripHtmlToExcerpt(input.bodyHtml);
 
   return (
     <aside className="rounded-[16px] bg-white p-5 shadow-sm lg:sticky lg:top-6 lg:max-h-[calc(100vh-48px)] lg:overflow-y-auto">
@@ -350,58 +510,79 @@ export default function SeoHelper(props: Props) {
       >
         <h2 className="text-[16px] font-bold text-[#1d1d1f]">검색 노출 도우미</h2>
         <span className="text-[14px] font-semibold text-[#1d1d1f]">
-          {passed}/{checks.length}
+          {passed}/{total}
           <span className="ml-2 text-[#8e8e93] lg:hidden">{open ? "▲" : "▼"}</span>
         </span>
       </button>
 
       <div className={`${open ? "block" : "hidden"} mt-4 lg:block`}>
-        <p className="mb-3 text-[12px] text-[#8e8e93]">
-          ⓘ를 누르면 이유와 예시를 볼 수 있어요. 입력값은 검사용이라 저장되지 않아요.
-        </p>
-
-        <label className="mb-1 block text-[13px] font-medium text-[#6e6e73]">
-          메인 키워드
+        {/* 쓰는 사람이 바로 이해하도록 질문 형태 이름 + 한 줄 설명 + 서로 이어지는 예시 */}
+        <label className="block text-[13px] font-semibold text-[#1d1d1f]">
+          ① 이 글, 어떤 검색어로 찾아오면 좋겠어요?
         </label>
+        <p className="mb-1.5 mt-0.5 text-[12px] text-[#8e8e93]">
+          가장 중요한 검색어 하나만 적어요.
+        </p>
         <input
           value={keyword}
-          onChange={(e) => setKeyword(e.target.value)}
-          placeholder="예: 운동 습관"
+          onChange={(e) => onKeywordChange(e.target.value)}
+          placeholder="예: 헬스장 매너"
           className="w-full rounded-lg border border-black/10 px-3 py-2 text-[14px] text-[#1d1d1f]"
         />
 
-        <label className="mb-1 mt-3 block text-[13px] font-medium text-[#6e6e73]">
-          비슷한 말 (쉼표로 구분)
+        <label className="mt-4 block text-[13px] font-semibold text-[#1d1d1f]">
+          ② 같은 말이 반복될 때 바꿔 쓸 다른 표현{" "}
+          <span className="font-normal text-[#8e8e93]">(선택)</span>
         </label>
+        <p className="mb-1.5 mt-0.5 text-[12px] text-[#8e8e93]">
+          같은 뜻의 다른 말을 쉼표로 적으면 본문에 몇 번 들어갔는지 세어줘요. 반복되는 부분 몇 군데를 이 말로 바꾸면 다른 검색어에도 걸려요.
+        </p>
         <input
           value={related}
-          onChange={(e) => setRelated(e.target.value)}
-          placeholder="예: 꾸준히 운동하기, 운동 루틴, 작심삼일"
+          onChange={(e) => onRelatedChange(e.target.value)}
+          placeholder="예: 헬스장 에티켓, 헬스장 예절"
           className="w-full rounded-lg border border-black/10 px-3 py-2 text-[14px] text-[#1d1d1f]"
         />
+        <p className="mt-2 text-[12px] text-[#8e8e93]">입력값은 검사용이라 저장되지 않아요.</p>
 
-        <ul className="mt-4 flex flex-col gap-3">
-          {checks.map((check) => (
-            <li key={check.id} className="flex gap-2 text-[13px] leading-[1.5]">
-              <span aria-hidden>{ICON[check.status]}</span>
-              <div className="min-w-0 flex-1">
-                <p className="flex items-center font-semibold text-[#1d1d1f]">
-                  {check.label}
-                  {TIPS[check.id] && (
-                    <TipButton open={openTip === check.id} onClick={() => toggleTip(check.id)} />
-                  )}
-                </p>
-                <p className="break-words text-[#6e6e73]">{check.detail}</p>
-                {openTip === check.id && TIPS[check.id] && <TipBox tip={TIPS[check.id]} />}
-              </div>
-            </li>
-          ))}
-        </ul>
+        {/* 영역별 점수. 누르면 해당 입력 칸으로 이동한다. 자세한 결과는 각 칸 아래에 나온다. */}
+        <div className="mt-5 border-t border-black/10 pt-4">
+          <p className="mb-2 text-[12px] font-medium text-[#8e8e93]">
+            영역별 결과 · 자세한 내용은 각 입력 칸 아래에 있어요
+          </p>
+          <ul className="flex flex-col gap-1">
+            {(Object.keys(GROUP_LABEL) as CheckGroup[]).map((group) => {
+              const items = scored(checks).filter((c) => c.group === group);
+              if (items.length === 0) return null;
+              const ok = items.filter((c) => c.status === "pass").length;
+              const worst = items.some((c) => c.status === "fail")
+                ? "fail"
+                : items.some((c) => c.status === "warn")
+                  ? "warn"
+                  : "pass";
+              return (
+                <li key={group}>
+                  <a
+                    href={`#seo-${group}`}
+                    className="flex items-center justify-between rounded-md px-2 py-1.5 text-[13px] text-[#1d1d1f] hover:bg-[#f5f5f7]"
+                  >
+                    <span>
+                      {ICON[worst]} {GROUP_LABEL[group]}
+                    </span>
+                    <span className="font-semibold">
+                      {ok}/{items.length} →
+                    </span>
+                  </a>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
 
         {/* 실제 검색 결과에 보일 모습 (대략적인 미리보기) */}
         <div className="mt-5 border-t border-black/10 pt-4">
           <p className="mb-2 text-[12px] font-medium text-[#8e8e93]">검색 결과 미리보기</p>
-          <p className="text-[12px] text-[#6e6e73]">/news/{props.slug || "..."}</p>
+          <p className="text-[12px] text-[#6e6e73]">/news/{input.slug || "..."}</p>
           <p className="mt-0.5 line-clamp-1 text-[16px] text-[#1a0dab]">
             {oneLineTitle || "제목"} | {SITE_NAME}
           </p>

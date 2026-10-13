@@ -5,6 +5,7 @@ import { createSupabaseAdminClient } from "@/lib/supabase";
 import { sanitizePostHtml } from "@/lib/sanitize";
 import { requireAdmin } from "@/lib/auth";
 import { parseCta, type PostCta } from "@/lib/cta";
+import { requiredRelatedCount } from "@/lib/related";
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 
@@ -30,12 +31,38 @@ function checkCta(cta: PostCta | null | undefined) {
   const parsed = parseCta(cta);
   if (!parsed) {
     throw new Error(
-      cta.type === "link"
-        ? "CTA 링크 버튼의 버튼 글자와 링크(https:// 또는 /로 시작)를 확인해주세요."
-        : "CTA로 추천할 글을 하나 이상 골라주세요."
+      "CTA 링크 버튼의 버튼 글자와 링크(https:// 또는 /로 시작)를 확인해주세요."
     );
   }
   return parsed;
+}
+
+/**
+ * 연관 콘텐츠는 필수: 다른 글 3개를 직접 골라야 저장된다.
+ * (다른 글이 3개보다 적은 사이트 초기에는 있는 만큼)
+ * 화면에서도 막지만, Server Action은 직접 호출될 수 있어서 서버에서 다시 확인한다.
+ * 지금 쓰는 글 자신(새 주소·원래 주소)과 존재하지 않는 글은 고를 수 없다.
+ */
+async function checkRelatedSlugs(
+  supabase: ReturnType<typeof createSupabaseAdminClient>,
+  input: string[] | undefined,
+  selfSlugs: string[]
+) {
+  const { data, error } = await supabase.from("posts").select("slug");
+  if (error) throw new Error(error.message);
+
+  const available = new Set(
+    (data ?? []).map((p) => p.slug as string).filter((s) => !selfSlugs.includes(s))
+  );
+  const picked = [...new Set(input ?? [])].filter((s) => available.has(s));
+  const required = requiredRelatedCount(available.size);
+
+  if (picked.length !== required) {
+    throw new Error(
+      `연관 콘텐츠를 ${required}개 골라주세요. (지금 ${picked.length}개)`
+    );
+  }
+  return picked;
 }
 
 type CreatePostInput = {
@@ -45,6 +72,7 @@ type CreatePostInput = {
   bodyHtml: string;
   imageUrl: string | null;
   cta: PostCta | null;
+  relatedSlugs: string[];
 };
 
 type UpdatePostInput = CreatePostInput & {
@@ -74,12 +102,14 @@ export async function createPost(input: CreatePostInput) {
   }
 
   const supabase = createSupabaseAdminClient();
+  const relatedSlugs = await checkRelatedSlugs(supabase, input.relatedSlugs, [slug]);
   const { error } = await supabase.from("posts").insert({
     slug,
     eyebrow,
     title,
     body: bodyHtml,
     cta: checkCta(input.cta),
+    related_slugs: relatedSlugs,
     image_url: checkImageUrl(input.imageUrl),
   });
 
@@ -127,6 +157,10 @@ export async function updatePost(input: UpdatePostInput) {
   }
 
   const supabase = createSupabaseAdminClient();
+  const relatedSlugs = await checkRelatedSlugs(supabase, input.relatedSlugs, [
+    slug,
+    originalSlug,
+  ]);
   const { error, data } = await supabase
     .from("posts")
     .update({
@@ -135,6 +169,7 @@ export async function updatePost(input: UpdatePostInput) {
       title,
       body: bodyHtml,
       cta: checkCta(input.cta),
+      related_slugs: relatedSlugs,
       image_url: checkImageUrl(input.imageUrl),
       // 수정 시각. sitemap lastmod·JSON-LD dateModified로 나가서
       // 검색엔진이 "이 글이 바뀌었다"를 알고 다시 수집하게 한다.
