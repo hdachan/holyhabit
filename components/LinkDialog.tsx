@@ -5,6 +5,7 @@ import type { Editor } from "@tiptap/react";
 import { normalizeLinkInput } from "@/lib/link";
 import type { PostOption } from "@/lib/related";
 import PostPicker from "@/components/PostPicker";
+import { BLOG_PATH, postPath } from "@/lib/site";
 
 // 에디터 🔗 버튼을 누르면 뜨는 링크 창.
 // "링크 입력"(외부 사이트·주소 직접 입력)과 "내 글 고르기"(목록에서 선택) 두 가지 방법을 준다.
@@ -20,7 +21,7 @@ export default function LinkDialog({
 }) {
   const currentHref = (editor.getAttributes("link").href as string | undefined) ?? "";
   const [tab, setTab] = useState<"url" | "post">(
-    currentHref.startsWith("/news/") || !currentHref ? "post" : "url"
+    currentHref.startsWith(`${BLOG_PATH}/`) || !currentHref ? "post" : "url"
   );
   const [url, setUrl] = useState(currentHref);
   const [error, setError] = useState<string | null>(null);
@@ -97,8 +98,8 @@ export default function LinkDialog({
             </p>
             <PostPicker
               options={postOptions}
-              isSelected={(slug) => currentHref === `/news/${slug}`}
-              onPick={(option) => apply(`/news/${option.slug}`, option.title)}
+              isSelected={(slug) => currentHref === postPath(slug)}
+              onPick={(option) => apply(postPath(option.slug), option.title)}
               maxHeight={280}
             />
           </div>

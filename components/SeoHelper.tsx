@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { htmlToText, stripHtmlToExcerpt } from "@/lib/text";
 import { checkAlt, extractAlts } from "@/lib/alt";
-import { SITE_NAME } from "@/lib/site";
+import { SITE_NAME, postPath } from "@/lib/site";
 
 // 글쓰기 화면의 검색 노출 도우미.
 // 기준은 "글 쓸 때 키워드 꿀팁" 가이드와 같다. 검사만 하고 저장을 막지는 않는다.
@@ -143,7 +143,7 @@ const TIPS: Record<string, Tip> = {
     good: "운동 후 덤벨을 제자리에 정리하는 모습",
   },
   "internal-link": {
-    why: "선택 사항이에요. 글 아래 연관 콘텐츠로 다른 글과 이미 연결되지만, 문장 속 링크는 앞뒤 문맥이 있어서 검색엔진이 두 글의 관계를 더 잘 이해해요. 글자를 선택하고 🔗를 눌러 /news/글주소(예: /news/column-002)를 넣으면 돼요. 글 주소는 글 관리 목록에서 볼 수 있어요. 링크 글자에는 내용을 담으세요.",
+    why: "선택 사항이에요. 글 아래 연관 콘텐츠로 다른 글과 이미 연결되지만, 문장 속 링크는 앞뒤 문맥이 있어서 검색엔진이 두 글의 관계를 더 잘 이해해요. 글자를 선택하고 🔗를 눌러 /blog/글주소(예: /blog/column-002)를 넣으면 돼요. 글 주소는 글 관리 목록에서 볼 수 있어요. 링크 글자에는 내용을 담으세요.",
     bad: "자세한 내용은 [여기를 클릭]",
     good: "헬스장에 처음 간다면 [헬스장 매너 총정리]도 함께 읽어보세요.",
   },
@@ -306,7 +306,7 @@ function runChecks(
   else if (/[^a-z0-9-]/.test(slug)) add("slug", "글 주소", "fail", "영문 소문자, 숫자, 하이픈(-)만 쓸 수 있어요. 특수문자를 지워주세요.");
   else if (!SLUG_PATTERN.test(slug)) add("slug", "글 주소", "fail", "하이픈(-)은 단어 사이에 하나씩만 쓸 수 있어요. 맨 앞·맨 뒤나 연속(--)은 안 돼요.");
   else if (/^((post|column|news|test)-?)?\d+$/.test(slug)) add("slug", "글 주소", "warn", "번호 대신 영어 키워드로 써주세요. 예: gym-beginner-routine");
-  else add("slug", "글 주소", "pass", `/news/${slug}`);
+  else add("slug", "글 주소", "pass", postPath(slug));
 
   add(
     "cover",
@@ -338,7 +338,7 @@ function runChecks(
   }
 
   // 본문 속 내 글 링크는 선택 사항. 글 아래 연관 콘텐츠로 다른 글과 이미 연결되기 때문.
-  const hasInternalLink = /<a[^>]+href="[^"]*\/news\/[^"]+"/.test(bodyHtml);
+  const hasInternalLink = /<a[^>]+href="[^"]*\/(blog|news)\/[^"]+"/.test(bodyHtml);
   add(
     "internal-link",
     "본문 속 내 글 링크",
@@ -582,7 +582,7 @@ export default function SeoHelper({
         {/* 실제 검색 결과에 보일 모습 (대략적인 미리보기) */}
         <div className="mt-5 border-t border-black/10 pt-4">
           <p className="mb-2 text-[12px] font-medium text-[#8e8e93]">검색 결과 미리보기</p>
-          <p className="text-[12px] text-[#6e6e73]">/news/{input.slug || "..."}</p>
+          <p className="text-[12px] text-[#6e6e73]">{postPath(input.slug || "...")}</p>
           <p className="mt-0.5 line-clamp-1 text-[16px] text-[#1a0dab]">
             {oneLineTitle || "제목"} | {SITE_NAME}
           </p>

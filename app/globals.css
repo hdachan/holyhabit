@@ -6,7 +6,7 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-helvetica);
+  --font-sans: var(--font-paperlogy);
 }
 @media (prefers-color-scheme: dark) {
   :root {
@@ -18,7 +18,11 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-helvetica), Arial, Helvetica, sans-serif;
+  font-family: var(--font-paperlogy), "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  /* 한국어를 단어(어절) 단위로 줄바꿈한다. 기본값은 "여정"이 "여/정"처럼 글자 중간에서 끊긴다.
+     아주 긴 영어 주소 등은 칸을 넘지 않게 필요할 때만 끊는다. */
+  word-break: keep-all;
+  overflow-wrap: break-word;
 }
 
 /* Tiptap 에디터에서 저장된 HTML을 예쁘게 보여주기 위한 스타일

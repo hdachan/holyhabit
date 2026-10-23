@@ -4,6 +4,7 @@ import {
   SITE_NAME,
   DEFAULT_TITLE,
   DEFAULT_DESCRIPTION,
+  postPath,
 } from "@/lib/site";
 
 // /rss.xml — 새 글 소식 피드. 네이버 서치어드바이저에 "RSS 제출"로 등록한다.
@@ -25,7 +26,7 @@ export async function GET() {
 
   const items = posts
     .map((post) => {
-      const url = `${SITE_URL}/news/${post.slug}`;
+      const url = `${SITE_URL}${postPath(post.slug)}`;
       return `    <item>
       <title>${escapeXml(post.seoTitle)}</title>
       <link>${url}</link>

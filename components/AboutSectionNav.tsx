@@ -28,16 +28,16 @@ export default function AboutSectionNav({
   }, [sections]);
 
   return (
-    <nav className="sticky top-4 z-20 mx-auto my-10 w-fit max-w-[calc(100%-32px)] overflow-x-auto rounded-full bg-black px-2 py-2 shadow-lg">
+    <nav className="sticky top-3 z-20 mx-auto w-fit max-w-[calc(100%-32px)] overflow-x-auto rounded-full border border-black/5 bg-white/90 p-1.5 shadow-[0_4px_20px_rgba(0,0,0,0.06)] backdrop-blur">
       <ul className="flex items-center gap-1">
         {sections.map(({ id, label }) => (
           <li key={id}>
             <a
               href={`#${id}`}
-              className={`block whitespace-nowrap rounded-full px-4 py-1.5 text-[12px] font-semibold tracking-[0.08em] transition-colors md:px-6 ${
+              className={`block whitespace-nowrap rounded-full px-4 py-2 text-[13px] font-bold transition-colors md:px-5 ${
                 active === id
-                  ? "bg-white text-black"
-                  : "text-white/60 hover:text-white"
+                  ? "bg-[#191f28] text-white"
+                  : "text-[#8b95a1] hover:text-[#191f28]"
               }`}
             >
               {label}

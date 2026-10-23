@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { SITE_NAME } from "@/lib/site";
+import { SITE_NAME, BLOG_PATH } from "@/lib/site";
 
 // 없는 주소로 들어왔을 때 보여주는 화면(404).
 // 검색 노출과는 상관없지만(Next가 noindex를 자동으로 붙인다), 잘못 들어온 방문자가 떠나지 않게 콘텐츠로 안내한다.
@@ -17,7 +17,7 @@ export default function NotFound() {
       </p>
       <div className="mt-8 flex flex-wrap justify-center gap-3">
         <Link
-          href="/news"
+          href={BLOG_PATH}
           className="rounded-full bg-[#1d1d1f] px-6 py-3 text-[15px] font-medium text-white hover:opacity-90"
         >
           콘텐츠 보러 가기

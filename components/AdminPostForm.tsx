@@ -13,6 +13,7 @@ import { requiredRelatedCount, type PostOption } from "@/lib/related";
 import type { PostCta } from "@/lib/cta";
 import type { Post } from "@/lib/posts";
 import { POST_LABELS } from "@/lib/labels";
+import { postPath } from "@/lib/site";
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const SLUG_PATTERN = /^[a-z0-9]+(-[a-z0-9]+)*$/;
@@ -161,7 +162,7 @@ export default function AdminPostForm({ mode, initialPost, postOptions, authorNa
         });
       }
       setDone(true);
-      setTimeout(() => router.push(`/news/${slug}`), 800);
+      setTimeout(() => router.push(postPath(slug)), 800);
     } catch (err) {
       setError(err instanceof Error ? err.message : "게시에 실패했어요.");
     } finally {
@@ -270,7 +271,7 @@ export default function AdminPostForm({ mode, initialPost, postOptions, authorNa
             />
             {/* 긴 slug가 화면 밖으로 삐져나가지 않게 break-all 추가 */}
             <p className="mt-1 break-all text-[12px] text-[#8e8e93]">
-              /news/{slug || "..."}
+              {postPath(slug || "...")}
             </p>
             {mode === "edit" && (
               <p className="mt-1 text-[12px] text-amber-600">

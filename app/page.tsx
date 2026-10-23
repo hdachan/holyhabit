@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import AboutSectionNav from "@/components/AboutSectionNav";
 import {
   SITE_URL,
@@ -11,10 +12,11 @@ import {
   BUSINESS_OWNER,
   BUSINESS_ADDRESS,
   CONTACT_EMAIL,
+  BLOG_PATH,
 } from "@/lib/site";
 import { pageOpenGraph } from "@/lib/seo";
 
-// 메인(홈) = 브랜드 소개. 글 목록은 /news로 옮겼다.
+// 메인(홈) = 브랜드 소개. 글 목록은 /blog에 있다.
 // 제목·설명은 layout 기본값을 쓰고 정본 주소만 지정한다.
 export const metadata: Metadata = {
   alternates: { canonical: "/" },
@@ -175,53 +177,56 @@ const SECTIONS: Section[] = [
   },
 ];
 
-// 사진이 들어갈 자리. 테스트용 검은 블록이며, 나중에 next/image로 교체한다.
+// 사진이 들어갈 자리. 실제 사진이 정해지면 next/image로 교체한다.
 function ImagePlaceholder({ className = "" }: { className?: string }) {
   return (
     <div
       aria-hidden
-      className={`w-full rounded-[12px] bg-black ${className}`}
-    />
+      className={`flex w-full items-center justify-center rounded-[28px] bg-[#f2f4f6] text-[14px] text-[#b0b8c1] ${className}`}
+    >
+      사진 준비중
+    </div>
   );
 }
 
-function SectionText({ section }: { section: Section }) {
+// 섹션 머리: 주황 라벨 → 큰 제목
+function SectionHead({ section, center = false }: { section: Section; center?: boolean }) {
   return (
-    <div>
-      <p className="flex items-center gap-2 text-[12px] font-semibold tracking-[0.08em] text-[#1d1d1f]">
-        <span className="h-1.5 w-1.5 rounded-full bg-[#1d1d1f]" />
-        {section.label}
-      </p>
-      <h2 className="mt-3 text-[26px] font-bold leading-[1.3] tracking-tight text-[#1d1d1f] md:text-[32px]">
+    <div className={center ? "text-center" : ""}>
+      <p className="text-[15px] font-bold text-[#e8893a] md:text-[17px]">{section.label}</p>
+      <h2 className="mt-3 whitespace-pre-line text-[30px] font-bold leading-[1.35] tracking-tight text-[#191f28] md:text-[44px]">
         {section.heading}
       </h2>
-
-      <div className="mt-6 flex flex-col gap-5">
-        {section.paragraphs.map((text, i) => (
-          <p
-            key={i}
-            className="whitespace-pre-line text-[15px] leading-[1.75] text-[#1d1d1f]/75"
-          >
-            {text}
-          </p>
-        ))}
-        {section.items?.map((item) => (
-          <div key={item.title}>
-            <h3 className="text-[15px] font-bold text-[#1d1d1f]">
-              {item.title}
-            </h3>
-            <p className="mt-1 whitespace-pre-line text-[15px] leading-[1.7] text-[#1d1d1f]/75">
-              {item.text}
-            </p>
-          </div>
-        ))}
-        {section.quote && (
-          <p className="whitespace-pre-line text-[15px] font-bold leading-[1.75] text-[#1d1d1f]">
-            {section.quote}
-          </p>
-        )}
-      </div>
     </div>
+  );
+}
+
+function Paragraphs({ texts, center = false }: { texts: string[]; center?: boolean }) {
+  if (texts.length === 0) return null;
+  return (
+    <div className={`mt-8 flex flex-col gap-5 ${center ? "text-center" : ""}`}>
+      {texts.map((text, i) => (
+        <p
+          key={i}
+          className="whitespace-pre-line text-[17px] leading-[1.8] text-[#4e5968] md:text-[19px]"
+        >
+          {text}
+        </p>
+      ))}
+    </div>
+  );
+}
+
+// 강조 문장: 연한 주황 상자
+function Quote({ text, center = false }: { text: string; center?: boolean }) {
+  return (
+    <p
+      className={`mt-8 whitespace-pre-line rounded-[20px] bg-[#fff4ea] px-6 py-5 text-[17px] font-bold leading-[1.7] text-[#191f28] md:px-8 md:py-6 md:text-[20px] ${
+        center ? "text-center" : ""
+      }`}
+    >
+      {text}
+    </p>
   );
 }
 
@@ -235,64 +240,122 @@ export default function HomePage() {
           __html: JSON.stringify(siteJsonLd).replace(/</g, "\\u003c"),
         }}
       />
+
       {/* 히어로: 페이지의 유일한 h1 */}
-      <header className="bg-black px-6 pb-28 pt-40 md:px-10 md:pb-40 md:pt-56">
-        <div className="mx-auto max-w-[1200px]">
-          <h1 className="text-[36px] font-bold tracking-tight text-white md:text-[56px]">
-            Your Journey. Never Alone.
-          </h1>
-          <p className="mt-3 text-[15px] text-white/80 md:text-[18px]">
-            즐거움이 발걸음이 되고, 함께가 길이 되는 여정
-          </p>
+      <section className="mx-auto max-w-[1156px] px-6 pb-16 pt-20 text-center md:pb-24 md:pt-32">
+        <p className="text-[16px] font-bold text-[#e8893a] md:text-[18px]">함께 이어가는 즐거운 습관</p>
+        <h1 className="mt-4 text-[44px] font-bold leading-[1.15] tracking-tight text-[#191f28] md:text-[76px]">
+          Your Journey.
+          <br />
+          Never Alone.
+        </h1>
+        <p className="mx-auto mt-6 max-w-[560px] text-[17px] leading-[1.7] text-[#4e5968] md:text-[20px]">
+          즐거움이 발걸음이 되고, 함께가 길이 되는 여정
+        </p>
+        <div className="mt-10 flex flex-wrap justify-center gap-3">
+          <Link
+            href={BLOG_PATH}
+            className="rounded-[14px] bg-[#f2a25c] px-7 py-4 text-[16px] font-bold text-white transition hover:bg-[#e8893a]"
+          >
+            습관 이야기 읽기
+          </Link>
+          {SOCIAL_LINKS.map((link) => (
+            <a
+              key={link.url}
+              href={link.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="rounded-[14px] bg-[#f2f4f6] px-7 py-4 text-[16px] font-bold text-[#333d4b] transition hover:bg-[#e5e8eb]"
+            >
+              {link.label} ↗
+            </a>
+          ))}
         </div>
-      </header>
+        <ImagePlaceholder className="mt-16 aspect-[16/9] md:mt-20 md:aspect-[21/9]" />
+      </section>
 
-      <AboutSectionNav
-        sections={SECTIONS.map(({ id, label }) => ({ id, label }))}
-      />
+      <AboutSectionNav sections={SECTIONS.map(({ id, label }) => ({ id, label }))} />
 
-      <main className="mx-auto max-w-[1200px] px-6 pb-24 md:px-10">
+      <main>
         {SECTIONS.map((section, i) => (
+          // 섹션마다 흰색·연회색 배경을 번갈아 써서 구분한다 (구분선 대신).
           // scroll-mt: 메뉴를 눌러 이동했을 때 상단 고정 메뉴에 제목이 가려지지 않게 한다.
           <section
             key={section.id}
             id={section.id}
-            className={`scroll-mt-24 py-14 md:py-20 ${
-              i > 0 ? "border-t border-black/15" : ""
-            }`}
+            className={`scroll-mt-20 ${i % 2 === 1 ? "bg-[#f9fafb]" : "bg-white"}`}
           >
-            {section.layout === "full" && (
-              <>
-                <SectionText section={section} />
-                <ImagePlaceholder className="mt-10 aspect-[16/9]" />
-              </>
-            )}
-
-            {section.layout === "right" && (
-              <div className="grid items-center gap-10 md:grid-cols-2">
-                <SectionText section={section} />
-                <ImagePlaceholder className="aspect-[4/3]" />
-              </div>
-            )}
-
-            {section.layout === "left" && (
-              <>
-                <div className="grid items-center gap-10 md:grid-cols-[1.2fr_1fr]">
-                  {/* 모바일에서는 텍스트가 먼저, 넓은 화면에서는 이미지가 왼쪽 */}
-                  <ImagePlaceholder className="order-2 aspect-[16/10] md:order-1" />
-                  <div className="order-1 md:order-2">
-                    <SectionText section={{ ...section, closing: undefined }} />
+            <div className="mx-auto max-w-[1156px] px-6 py-24 md:py-32">
+              {section.layout === "full" && (
+                <>
+                  <div className="mx-auto max-w-[760px]">
+                    <SectionHead section={section} center />
+                    <Paragraphs texts={section.paragraphs} center />
+                    {section.quote && <Quote text={section.quote} center />}
                   </div>
+                  <ImagePlaceholder className="mt-16 aspect-[16/9] md:aspect-[2/1]" />
+                </>
+              )}
+
+              {section.layout === "right" && (
+                <div className="grid items-center gap-12 md:grid-cols-2 md:gap-16">
+                  <div>
+                    <SectionHead section={section} />
+                    <Paragraphs texts={section.paragraphs} />
+                    {section.quote && <Quote text={section.quote} />}
+                  </div>
+                  <ImagePlaceholder className="aspect-[4/5]" />
                 </div>
-                {section.closing && (
-                  <p className="mt-8 whitespace-pre-line text-[18px] font-bold leading-[1.6] text-[#1d1d1f] md:text-[20px]">
-                    {section.closing}
-                  </p>
-                )}
-              </>
-            )}
+              )}
+
+              {section.layout === "left" && (
+                <>
+                  <SectionHead section={section} center />
+                  {/* 세 가지 가치: 카드 3장 ("GOAL — 성취" → 작은 영어 + 큰 한글) */}
+                  <div className="mt-14 grid gap-4 md:grid-cols-3 md:gap-6">
+                    {section.items?.map((item) => {
+                      const [en, ko] = item.title.split(" — ");
+                      return (
+                        <div
+                          key={item.title}
+                          className="rounded-[28px] bg-[#f6f7f9] p-8 md:p-10"
+                        >
+                          <p className="text-[14px] font-bold tracking-[0.06em] text-[#e8893a]">{en}</p>
+                          <h3 className="mt-2 text-[26px] font-bold text-[#191f28]">{ko ?? en}</h3>
+                          <p className="mt-4 whitespace-pre-line text-[16px] leading-[1.75] text-[#4e5968]">
+                            {item.text}
+                          </p>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  {section.closing && (
+                    <p className="mx-auto mt-14 max-w-[760px] whitespace-pre-line text-center text-[20px] font-bold leading-[1.6] text-[#191f28] md:text-[24px]">
+                      {section.closing}
+                    </p>
+                  )}
+                </>
+              )}
+            </div>
           </section>
         ))}
+
+        {/* 마무리: 소개를 다 읽은 사람이 콘텐츠로 이어지는 길 */}
+        <section className="mx-auto max-w-[1156px] px-6 pb-24 pt-8 md:pb-32">
+          <div className="rounded-[32px] bg-[#191f28] px-8 py-14 text-center md:py-20">
+            <p className="text-[24px] font-bold leading-[1.4] text-white md:text-[36px]">
+              작은 습관이 이어지는 이야기,
+              <br />
+              지금 읽어보세요.
+            </p>
+            <Link
+              href={BLOG_PATH}
+              className="mt-8 inline-block rounded-[14px] bg-[#f2a25c] px-7 py-4 text-[16px] font-bold text-white transition hover:bg-[#e8893a]"
+            >
+              콘텐츠 보러가기
+            </Link>
+          </div>
+        </section>
       </main>
     </div>
   );

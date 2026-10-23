@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { GoogleAnalytics } from "@next/third-parties/google";
 import "./globals.css";
-import { helvetica } from "@/lib/fonts";
+import { paperlogy } from "@/lib/fonts";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 // 사이트 전역 설정은 lib/site.ts 한곳에서 관리한다.
@@ -83,9 +83,9 @@ export default function RootLayout({
     // lang="ko": 검색엔진에 한국어 페이지임을 알려 한국어 검색 결과에 맞게 분류되도록 한다.
     <html
       lang="ko"
-      className={`${helvetica.variable} h-full antialiased`}
+      className={`${paperlogy.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col font-[family-name:var(--font-helvetica)]">
+      <body className="min-h-full flex flex-col font-[family-name:var(--font-paperlogy)]">
         {/* RSS 위치 안내. React가 <head>로 옮겨준다.
             metadata.alternates로 넣으면 각 페이지의 canonical 지정에 덮어써져서 사라지므로 직접 넣는다. */}
         <link

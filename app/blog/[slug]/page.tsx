@@ -7,6 +7,8 @@ import {
   SITE_URL,
   SITE_NAME,
   DEFAULT_OG_IMAGE,
+  BLOG_PATH,
+  postPath,
 } from "@/lib/site";
 import PostCtaBox from "@/components/PostCtaBox";
 
@@ -35,7 +37,7 @@ export async function generateMetadata({
   // 글이 없으면 빈 값 반환. 404 처리는 아래 페이지 컴포넌트의 notFound()가 담당한다.
   if (!item) return {};
 
-  const url = `/news/${item.slug}`;
+  const url = postPath(item.slug);
 
   return {
     // layout의 title.template이 적용되어 "글 제목 | holyhabit"으로 출력된다.
@@ -94,7 +96,7 @@ export default async function NewsDetailPage({ params }: PageProps) {
     image: [new URL(item.imageUrl ?? DEFAULT_OG_IMAGE, SITE_URL).href],
     datePublished: item.publishedAt,
     dateModified: item.updatedAt,
-    mainEntityOfPage: `${SITE_URL}/news/${item.slug}`,
+    mainEntityOfPage: `${SITE_URL}${postPath(item.slug)}`,
     author: {
       "@type": "Person",
       name: item.authorName,
@@ -113,7 +115,7 @@ export default async function NewsDetailPage({ params }: PageProps) {
     "@type": "BreadcrumbList",
     itemListElement: [
       { "@type": "ListItem", position: 1, name: SITE_NAME, item: `${SITE_URL}/` },
-      { "@type": "ListItem", position: 2, name: "콘텐츠", item: `${SITE_URL}/news` },
+      { "@type": "ListItem", position: 2, name: "콘텐츠", item: `${SITE_URL}${BLOG_PATH}` },
       { "@type": "ListItem", position: 3, name: item.seoTitle },
     ],
   };
@@ -157,7 +159,7 @@ export default async function NewsDetailPage({ params }: PageProps) {
           <div className="mx-auto max-w-[760px] px-[18px] py-12">
             {/* 콘텐츠 목록으로 돌아가기 */}
             <Link
-              href="/news"
+              href={BLOG_PATH}
               className="mb-8 inline-flex items-center gap-1 text-[15px] text-[#6e6e73] hover:text-[#1d1d1f]"
             >
               ← 콘텐츠 목록으로 돌아가기
@@ -220,7 +222,7 @@ export default async function NewsDetailPage({ params }: PageProps) {
                 {related.map((r) => (
                   <Link
                     key={r.slug}
-                    href={`/news/${r.slug}`}
+                    href={postPath(r.slug)}
                     className="block overflow-hidden rounded-[20px] bg-[#f5f5f7] shadow-sm transition hover:shadow-md"
                   >
                     {r.imageUrl ? (

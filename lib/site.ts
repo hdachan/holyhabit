@@ -11,6 +11,11 @@ export const DEFAULT_TITLE = "holyhabit 홀리해빗 | 함께 이어가는 즐�
 
 export const DEFAULT_DESCRIPTION =
   "목표를 혼자 버티지 마세요. holyhabit은 즐거움과 함께라는 가치로 다시 하고 싶어지는 습관을 만듭니다. 미어캣 레오와 함께 작은 성취를 발견하고, 어느새 달라진 나를 만나보세요.";
+// 글 목록 주소. 글 주소는 postPath("column-001") → "/blog/column-001".
+// 예전 주소(/news/...)는 next.config.ts에서 여기로 영구 이동(301)시킨다.
+export const BLOG_PATH = "/blog";
+export const postPath = (slug: string) => `${BLOG_PATH}/${slug}`;
+
 // 링크 공유 시 기본 미리보기 이미지 (public/og.png, 1200×630 권장).
 export const DEFAULT_OG_IMAGE = "/og.png";
 

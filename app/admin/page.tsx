@@ -2,6 +2,7 @@ import Link from "next/link";
 import { requireAdmin } from "@/lib/auth";
 import { getAdminPostList, type AdminPostRow } from "@/lib/admin-posts";
 import DeletePostButton from "@/components/DeletePostButton";
+import { postPath } from "@/lib/site";
 
 type PageProps = {
   // ?author=all | 작성자 id. 없으면 "내 글"
@@ -85,11 +86,11 @@ export default async function AdminPage({ searchParams }: PageProps) {
                       {post.eyebrow} · {post.authorName} · {dateFormatter.format(new Date(post.createdAt))}
                     </p>
                     <p className="truncate text-[16px] font-bold text-[#1d1d1f]">{post.title}</p>
-                    <p className="truncate text-[12px] text-[#8e8e93]">/news/{post.slug}</p>
+                    <p className="truncate text-[12px] text-[#8e8e93]">{postPath(post.slug)}</p>
                   </div>
                   <div className="flex shrink-0 items-center gap-2">
                     <Link
-                      href={`/news/${post.slug}`}
+                      href={postPath(post.slug)}
                       target="_blank"
                       className="rounded-lg px-3 py-2 text-[14px] font-medium text-[#6e6e73] hover:text-[#1d1d1f]"
                     >
