@@ -3,6 +3,7 @@ import { createSupabaseClient } from "./supabase";
 import { stripHtmlToExcerpt } from "./text";
 import { parseCta, type PostCta } from "./cta";
 import { parseRelatedSlugs } from "./related";
+import { AUTHOR_BIO, AUTHOR_NAME } from "./site";
 
 export type Post = {
   slug: string;
@@ -21,6 +22,9 @@ export type Post = {
   excerpt: string; // 카드 미리보기용 — 본문에서 태그를 뺀 짧은 요약
   cta: PostCta | null; // 글 하단 CTA (없으면 null)
   relatedSlugs: string[]; // 글쓴이가 고른 연관 콘텐츠 (없으면 빈 배열 → 자동 추천)
+  // 작성자 (관리자 계정별 "내 작성자 정보"). 작성자가 연결되지 않은 예전 글은 기본 작성자.
+  authorName: string;
+  authorBio: string;
 };
 
 // 서버(Vercel)는 UTC라서 getDate()를 쓰면 한국 시간 오전 9시 전 글이 전날로 표시된다.
@@ -46,6 +50,7 @@ function toPost(row: {
   updated_at?: string | null;
   cta?: unknown;
   related_slugs?: unknown;
+  author?: { name: string; bio: string | null } | null;
 }): Post {
   return {
     slug: row.slug,
@@ -63,6 +68,8 @@ function toPost(row: {
     excerpt: stripHtmlToExcerpt(row.body),
     cta: parseCta(row.cta),
     relatedSlugs: parseRelatedSlugs(row.related_slugs),
+    authorName: row.author?.name || AUTHOR_NAME,
+    authorBio: row.author ? row.author.bio ?? "" : AUTHOR_BIO,
   };
 }
 
@@ -77,7 +84,8 @@ export const getAllPosts = unstable_cache(
     const supabase = createSupabaseClient();
     const { data, error } = await supabase
       .from("posts")
-      .select("*")
+      // author: posts.author_id로 연결된 작성자 정보를 함께 가져온다 (쿼리는 한 번)
+      .select("*, author:authors(name, bio)")
       .order("created_at", { ascending: false });
 
     // 에러 시 빈 배열을 반환하면 그 빈 배열이 캐시에 저장되어
@@ -97,6 +105,22 @@ export const getAllPosts = unstable_cache(
     revalidate: 3600,
   }
 );
+
+/**
+ * 관리자 글 수정 화면 전용: 캐시를 거치지 않고 DB에서 바로 읽는다.
+ * 캐시된 글(최대 1시간 전 내용)을 수정 화면에 띄우면, 그 사이 DB가 바뀐 경우
+ * 저장할 때 예전 내용으로 덮어쓰게 된다.
+ */
+export async function getPostFresh(slug: string): Promise<Post | undefined> {
+  const supabase = createSupabaseClient();
+  const { data, error } = await supabase
+    .from("posts")
+    .select("*, author:authors(name, bio)")
+    .eq("slug", slug)
+    .maybeSingle();
+  if (error) throw new Error(`Supabase post fetch error: ${error.message}`);
+  return data ? toPost(data) : undefined;
+}
 
 export async function getPost(slug: string): Promise<Post | undefined> {
   const posts = await getAllPosts();

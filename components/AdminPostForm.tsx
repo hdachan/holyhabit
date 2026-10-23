@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import Image from "next/image";
 import { createPost, updatePost, uploadImage, deleteImageByUrl } from "@/app/actions";
 import RichTextEditor from "@/components/RichTextEditor";
@@ -11,6 +12,7 @@ import RelatedPostsEditor from "@/components/RelatedPostsEditor";
 import { requiredRelatedCount, type PostOption } from "@/lib/related";
 import type { PostCta } from "@/lib/cta";
 import type { Post } from "@/lib/posts";
+import { POST_LABELS } from "@/lib/labels";
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const SLUG_PATTERN = /^[a-z0-9]+(-[a-z0-9]+)*$/;
@@ -20,15 +22,22 @@ type Props = {
   initialPost?: Post;
   // CTA "다른 글 추천"에서 고를 수 있는 글 목록
   postOptions: PostOption[];
+  // 글에 표시될 작성자. 새 글: 로그인한 계정의 작성자 이름(아직 없으면 null), 수정: 그 글의 작성자
+  authorName: string | null;
 };
 
-export default function AdminPostForm({ mode, initialPost, postOptions }: Props) {
+export default function AdminPostForm({ mode, initialPost, postOptions, authorName }: Props) {
   const router = useRouter();
   const coverInputRef = useRef<HTMLInputElement>(null);
 
   const [title, setTitle] = useState(initialPost?.title ?? "");
   const [slug, setSlug] = useState(initialPost?.slug ?? "");
-  const [eyebrow, setEyebrow] = useState(initialPost?.eyebrow ?? "업데이트");
+  // 라벨: 새 글은 직접 고르게 비워둔다. 예전 라벨(예: "업데이트")이 붙은 글은 고르기 전까지 그대로 둔다.
+  const [eyebrow, setEyebrow] = useState(initialPost?.eyebrow ?? "");
+  const legacyLabel =
+    initialPost && !(POST_LABELS as readonly string[]).includes(initialPost.eyebrow)
+      ? initialPost.eyebrow
+      : null;
   const [bodyHtml, setBodyHtml] = useState(initialPost?.body ?? "");
   const [coverImageUrl, setCoverImageUrl] = useState<string | null>(
     initialPost?.imageUrl ?? null
@@ -93,6 +102,10 @@ export default function AdminPostForm({ mode, initialPost, postOptions }: Props)
     e.preventDefault();
     setError(null);
 
+    if (!eyebrow) {
+      setError("라벨을 골라주세요.");
+      return;
+    }
     if (!title.trim()) {
       setError("제목을 입력해주세요.");
       return;
@@ -109,6 +122,11 @@ export default function AdminPostForm({ mode, initialPost, postOptions }: Props)
       setError(
         "주소(slug)에는 한글을 사용할 수 없어요. 영문 소문자, 숫자, -만 입력해주세요. (예: my-first-post)"
       );
+      return;
+    }
+
+    if (!authorName) {
+      setError("먼저 상단 메뉴의 \"내 작성자 정보\"에서 작성자 이름을 입력해주세요.");
       return;
     }
 
@@ -172,15 +190,52 @@ export default function AdminPostForm({ mode, initialPost, postOptions }: Props)
         </div>
 
         <form onSubmit={handleSubmit} className="flex w-full min-w-0 flex-col gap-6 lg:order-1">
+          {/* 작성자: 계정마다 "내 작성자 정보"에서 정한 이름이 글에 표시된다 */}
+          {authorName ? (
+            <p className="text-[14px] text-[#6e6e73]">
+              {mode === "create" ? "작성자" : "이 글을 쓴 사람"}{" "}
+              <b className="text-[#1d1d1f]">{authorName}</b>
+              {mode === "edit" && " · 다른 계정으로 수정해도 작성자는 바뀌지 않아요."}
+              {mode === "create" && (
+                <>
+                  {" · "}
+                  <Link href="/admin/profile" className="underline hover:text-[#1d1d1f]">
+                    작성자 정보 바꾸기
+                  </Link>
+                </>
+              )}
+            </p>
+          ) : (
+            <p className="rounded-lg bg-[#fffbe6] px-4 py-3 text-[14px] text-amber-800">
+              ⚠️ 글에 표시할 작성자 이름이 아직 없어요.{" "}
+              <Link href="/admin/profile" className="font-medium underline">
+                내 작성자 정보 입력하기
+              </Link>
+            </p>
+          )}
+
           <div>
             <label className="mb-1 block text-sm font-medium text-[#6e6e73]">
-              라벨 (예: 업데이트, 보도자료)
+              라벨 (어떤 주제의 글인가요?)
             </label>
-            <input
+            <select
               value={eyebrow}
               onChange={(e) => setEyebrow(e.target.value)}
+              required
               className="w-full min-w-0 rounded-lg border border-black/10 bg-white px-4 py-2 text-[#1d1d1f]"
-            />
+            >
+              <option value="" disabled>
+                골라주세요
+              </option>
+              {POST_LABELS.map((label) => (
+                <option key={label} value={label}>
+                  {label}
+                </option>
+              ))}
+              {legacyLabel && (
+                <option value={legacyLabel}>{legacyLabel} (예전 라벨)</option>
+              )}
+            </select>
           </div>
 
           <div id="seo-title" className="scroll-mt-6">

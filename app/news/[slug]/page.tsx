@@ -7,8 +7,6 @@ import {
   SITE_URL,
   SITE_NAME,
   DEFAULT_OG_IMAGE,
-  AUTHOR_NAME,
-  AUTHOR_BIO,
 } from "@/lib/site";
 import PostCtaBox from "@/components/PostCtaBox";
 
@@ -97,7 +95,11 @@ export default async function NewsDetailPage({ params }: PageProps) {
     datePublished: item.publishedAt,
     dateModified: item.updatedAt,
     mainEntityOfPage: `${SITE_URL}/news/${item.slug}`,
-    author: { "@type": "Person", name: AUTHOR_NAME },
+    author: {
+      "@type": "Person",
+      name: item.authorName,
+      ...(item.authorBio && { description: item.authorBio }),
+    },
     publisher: {
       "@type": "Organization",
       name: SITE_NAME,
@@ -170,7 +172,7 @@ export default async function NewsDetailPage({ params }: PageProps) {
             </h1>
             {/* <time dateTime>: 사람에겐 "2026년 7월 24일", 기계에겐 ISO 날짜를 함께 제공 */}
             <p className="mb-10 text-[15px] text-[#6e6e73]">
-              <span className="font-medium text-[#1d1d1f]">{AUTHOR_NAME}</span>
+              <span className="font-medium text-[#1d1d1f]">{item.authorName}</span>
               {" · "}
               <time dateTime={item.publishedAt}>{item.date}</time>
             </p>
@@ -191,8 +193,10 @@ export default async function NewsDetailPage({ params }: PageProps) {
                 className="h-14 w-14 shrink-0 rounded-full"
               />
               <div>
-                <p className="text-[16px] font-bold text-[#1d1d1f]">{AUTHOR_NAME}</p>
-                <p className="mt-0.5 text-[14px] text-[#6e6e73]">{AUTHOR_BIO}</p>
+                <p className="text-[16px] font-bold text-[#1d1d1f]">{item.authorName}</p>
+                {item.authorBio && (
+                  <p className="mt-0.5 text-[14px] text-[#6e6e73]">{item.authorBio}</p>
+                )}
               </div>
             </div>
           </div>

@@ -6,6 +6,9 @@ import { sanitizePostHtml } from "@/lib/sanitize";
 import { requireAdmin } from "@/lib/auth";
 import { parseCta, type PostCta } from "@/lib/cta";
 import { requiredRelatedCount } from "@/lib/related";
+import { checkAuthorInput, type Author } from "@/lib/authors";
+import { getAuthorById } from "@/lib/authors-db";
+import { isAllowedLabel, POST_LABELS } from "@/lib/labels";
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 
@@ -65,6 +68,13 @@ async function checkRelatedSlugs(
   return picked;
 }
 
+// 글을 쓰거나 고친 사람을 기록하려면 그 계정의 작성자 정보(이름)가 있어야 한다.
+async function requireAuthorProfile(userId: string) {
+  if (!(await getAuthorById(userId))) {
+    throw new Error("먼저 상단 메뉴의 \"내 작성자 정보\"에서 작성자 이름을 입력해주세요.");
+  }
+}
+
 type CreatePostInput = {
   title: string;
   slug: string;
@@ -80,15 +90,18 @@ type UpdatePostInput = CreatePostInput & {
 };
 
 export async function createPost(input: CreatePostInput) {
-  await requireAdmin();
+  const user = await requireAdmin();
 
   const title = input.title.trim();
   const slug = input.slug.trim();
-  const eyebrow = input.eyebrow.trim() || "업데이트";
+  const eyebrow = input.eyebrow.trim();
   const bodyHtml = sanitizePostHtml(input.bodyHtml).trim();
 
   if (!title || !bodyHtml) {
     throw new Error("제목과 본문은 필수예요.");
+  }
+  if (!isAllowedLabel(eyebrow)) {
+    throw new Error(`라벨을 골라주세요. (${POST_LABELS.join(", ")})`);
   }
 
   if (!slug) {
@@ -101,6 +114,8 @@ export async function createPost(input: CreatePostInput) {
     );
   }
 
+  await requireAuthorProfile(user.id);
+
   const supabase = createSupabaseAdminClient();
   const relatedSlugs = await checkRelatedSlugs(supabase, input.relatedSlugs, [slug]);
   const { error } = await supabase.from("posts").insert({
@@ -111,6 +126,7 @@ export async function createPost(input: CreatePostInput) {
     cta: checkCta(input.cta),
     related_slugs: relatedSlugs,
     image_url: checkImageUrl(input.imageUrl),
+    author_id: user.id,
   });
 
   if (error) {
@@ -133,11 +149,12 @@ export async function createPost(input: CreatePostInput) {
  * 어떤 행을 수정할지는 originalSlug로 찾습니다.
  */
 export async function updatePost(input: UpdatePostInput) {
-  await requireAdmin();
+  const user = await requireAdmin();
+  await requireAuthorProfile(user.id);
 
   const title = input.title.trim();
   const slug = input.slug.trim();
-  const eyebrow = input.eyebrow.trim() || "업데이트";
+  const eyebrow = input.eyebrow.trim();
   const bodyHtml = sanitizePostHtml(input.bodyHtml).trim();
   const originalSlug = input.originalSlug.trim();
 
@@ -157,6 +174,17 @@ export async function updatePost(input: UpdatePostInput) {
   }
 
   const supabase = createSupabaseAdminClient();
+
+  // 라벨: 목록 중 하나. 예전 글의 라벨(예: "업데이트")은 바꾸지 않았다면 그대로 허용한다.
+  const { data: before } = await supabase
+    .from("posts")
+    .select("eyebrow")
+    .eq("slug", originalSlug)
+    .maybeSingle();
+  if (!isAllowedLabel(eyebrow, before?.eyebrow)) {
+    throw new Error(`라벨을 골라주세요. (${POST_LABELS.join(", ")})`);
+  }
+
   const relatedSlugs = await checkRelatedSlugs(supabase, input.relatedSlugs, [
     slug,
     originalSlug,
@@ -176,7 +204,7 @@ export async function updatePost(input: UpdatePostInput) {
       updated_at: new Date().toISOString(),
     })
     .eq("slug", originalSlug)
-    .select("slug");
+    .select("id");
 
   if (error) {
     if (error.code === "23505") {
@@ -189,6 +217,15 @@ export async function updatePost(input: UpdatePostInput) {
 
   if (!data || data.length === 0) {
     throw new Error("수정할 글을 찾을 수 없어요. (이미 삭제되었을 수 있어요)");
+  }
+
+  // 수정 기록: 누가 언제 고쳤는지 매번 한 줄씩 남긴다. (관리자 글 목록에 표시)
+  // 글 수정은 이미 끝났으므로 기록에 실패해도 수정을 되돌리지 않고 로그만 남긴다.
+  const { error: editLogError } = await supabase
+    .from("post_edits")
+    .insert({ post_id: data[0].id, author_id: user.id });
+  if (editLogError) {
+    console.error("수정 기록 저장 실패:", editLogError.message);
   }
 
   updateTag("posts");
@@ -290,4 +327,26 @@ export async function deleteImageByUrl(url: string | null) {
   if (error) {
     console.error("이미지 삭제 실패:", error.message);
   }
+}
+/**
+ * 로그인한 관리자의 작성자 정보(이름·소개)를 저장한다.
+ * 이 계정으로 쓴 모든 글의 작성자 표시가 함께 바뀐다.
+ */
+export async function saveAuthorProfile(input: Author) {
+  const user = await requireAdmin();
+
+  const problem = checkAuthorInput(input);
+  if (problem) throw new Error(problem);
+
+  const supabase = createSupabaseAdminClient();
+  const { error } = await supabase.from("authors").upsert({
+    id: user.id,
+    name: input.name.trim(),
+    bio: input.bio.trim(),
+    updated_at: new Date().toISOString(),
+  });
+  if (error) throw new Error(error.message);
+
+  // 글 목록 캐시에 작성자 이름이 함께 들어 있어서 같이 갱신한다.
+  updateTag("posts");
 }

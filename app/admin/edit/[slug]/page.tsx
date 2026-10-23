@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { getAllPosts, getPost } from "@/lib/posts";
+import { getAllPosts, getPostFresh } from "@/lib/posts";
 import AdminPostForm from "@/components/AdminPostForm";
 
 type PageProps = {
@@ -8,7 +8,8 @@ type PageProps = {
 
 export default async function AdminEditPage({ params }: PageProps) {
   const { slug } = await params;
-  const post = await getPost(slug);
+  // 수정 화면은 캐시가 아닌 DB의 최신 내용으로 연다 (예전 내용으로 덮어쓰기 방지)
+  const post = await getPostFresh(slug);
 
   if (!post) {
     notFound();
@@ -20,6 +21,11 @@ export default async function AdminEditPage({ params }: PageProps) {
     .map((p) => ({ slug: p.slug, title: p.seoTitle }));
 
   return (
-    <AdminPostForm mode="edit" initialPost={post} postOptions={postOptions} />
+    <AdminPostForm
+      mode="edit"
+      initialPost={post}
+      postOptions={postOptions}
+      authorName={post.authorName}
+    />
   );
 }

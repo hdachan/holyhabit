@@ -1,5 +1,13 @@
 import type { Metadata } from "next";
-import { CONTACT_EMAIL, SITE_NAME } from "@/lib/site";
+import {
+  BUSINESS_ADDRESS_TEXT,
+  BUSINESS_NAME,
+  BUSINESS_OWNER,
+  BUSINESS_REG_NO,
+  CONTACT_EMAIL,
+  CONTACT_HOURS,
+  SITE_NAME,
+} from "@/lib/site";
 import { pageOpenGraph } from "@/lib/seo";
 
 // ⚠️ 임시 초안. 실제로 수집하는 정보와 맞는지 확인한 뒤 확정하고,
@@ -62,8 +70,20 @@ const SECTIONS: { heading: string; body: string[] }[] = [
     ],
   },
   {
-    heading: "7. 개인정보 보호 문의처",
-    body: [`이메일: ${CONTACT_EMAIL || "준비 중"}`],
+    // 개인정보 보호법상 보호책임자의 이름과 연락처를 적어야 한다. 1인 사업자는 대표자가 맡는다.
+    heading: "7. 개인정보 보호책임자",
+    body: [
+      `보호책임자: ${BUSINESS_OWNER} (대표)`,
+      `이메일: ${CONTACT_EMAIL || "준비 중"}`,
+      `문의 가능 시간: ${CONTACT_HOURS}`,
+    ],
+  },
+  {
+    heading: "8. 운영자 정보",
+    body: [
+      `상호: ${BUSINESS_NAME} · 대표: ${BUSINESS_OWNER} · 사업자등록번호: ${BUSINESS_REG_NO}`,
+      `주소: ${BUSINESS_ADDRESS_TEXT}`,
+    ],
   },
 ];
 
@@ -73,7 +93,7 @@ export default function PrivacyPage() {
       <div className="mx-auto max-w-[760px] px-6 py-16 md:py-24">
         <h1 className="text-[32px] font-bold text-[#1d1d1f]">개인정보처리방침</h1>
         <p className="mt-3 text-[15px] leading-[1.7] text-[#6e6e73]">
-          {SITE_NAME}(이하 &quot;사이트&quot;)는 이용자의 개인정보를 중요하게 생각하며,
+          {BUSINESS_NAME}(이하 &quot;회사&quot;)는 {`${SITE_NAME} 웹사이트`}(이하 &quot;사이트&quot;)를 운영하며, 이용자의 개인정보를 중요하게 생각하고
           「개인정보 보호법」 등 관련 법령을 준수합니다.
         </p>
 

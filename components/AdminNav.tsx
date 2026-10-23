@@ -8,6 +8,7 @@ import { signOut } from "@/app/auth-actions";
 const LINKS = [
   { href: "/admin", label: "글 관리" },
   { href: "/admin/new", label: "새 글 쓰기" },
+  { href: "/admin/profile", label: "내 작성자 정보" },
 ];
 
 export default function AdminNav({ email }: { email: string }) {

@@ -14,13 +14,29 @@ export const DEFAULT_DESCRIPTION =
 // 링크 공유 시 기본 미리보기 이미지 (public/og.png, 1200×630 권장).
 export const DEFAULT_OG_IMAGE = "/og.png";
 
-// ── 작성자 (글 페이지 제목 아래·본문 끝, JSON-LD author에 쓰인다)
-// 모든 글에 같은 이름을 쓴다. 검색엔진은 "누가 썼는지"가 일관된 사이트를 더 신뢰한다.
+// ── 기본 작성자
+// 작성자 이름·소개는 관리자 계정마다 "내 작성자 정보"(/admin/profile)에서 입력한다.
+// 작성자가 연결되지 않은 예전 글에는 아래 값이 대신 쓰인다.
 export const AUTHOR_NAME = "피오니";
 export const AUTHOR_BIO = "holyhabit에서 함께하면 더 즐거운 습관 이야기를 씁니다.";
 
-// ── 푸터 연락처 (임시)
-// 비워두면 푸터에 "준비 중"으로 표시된다. 정해지면 여기만 고치면 된다.
-export const CONTACT_EMAIL = "";
-// 예: [{ label: "인스타그램", url: "https://instagram.com/holyhabit" }]
-export const SOCIAL_LINKS: { label: string; url: string }[] = [];
+// ── 사업자 정보 (푸터, 개인정보처리방침, 메인 페이지 JSON-LD Organization에 쓰인다)
+// 사업자등록증에 적힌 그대로 쓴다. 검색엔진은 실제 사업자가 운영하는 사이트를 더 신뢰한다.
+export const BUSINESS_NAME = "홀리해빗";
+export const BUSINESS_REG_NO = "373-25-01972";
+export const BUSINESS_OWNER = "황대찬";
+// 검색엔진용 주소 정보(JSON-LD)는 나눠서 쓰고, 화면에는 이어 붙여서 보여준다.
+export const BUSINESS_ADDRESS = {
+  region: "서울특별시",
+  locality: "성북구",
+  street: "돌곶이로28길 48",
+};
+export const BUSINESS_ADDRESS_TEXT = `${BUSINESS_ADDRESS.region} ${BUSINESS_ADDRESS.locality} ${BUSINESS_ADDRESS.street}`;
+
+// ── 연락처
+// 비워두면 푸터에 "준비 중"으로 표시된다.
+export const CONTACT_EMAIL = "holyhabits915@gmail.com";
+export const CONTACT_HOURS = "평일 10:00~18:00, 영업일 기준 1~2일 내 답변";
+export const SOCIAL_LINKS: { label: string; url: string }[] = [
+  { label: "인스타그램", url: "https://www.instagram.com/holyhabit_official/" },
+];

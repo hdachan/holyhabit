@@ -6,6 +6,11 @@ import {
   DEFAULT_TITLE,
   DEFAULT_DESCRIPTION,
   SOCIAL_LINKS,
+  BUSINESS_NAME,
+  BUSINESS_REG_NO,
+  BUSINESS_OWNER,
+  BUSINESS_ADDRESS,
+  CONTACT_EMAIL,
 } from "@/lib/site";
 import { pageOpenGraph } from "@/lib/seo";
 
@@ -35,6 +40,27 @@ const siteJsonLd = {
     {
       "@type": "Organization",
       name: SITE_NAME,
+      // 사업자등록증의 상호와 번호. 검색엔진이 실제 운영 주체를 확인하는 데 쓴다.
+      legalName: BUSINESS_NAME,
+      alternateName: BUSINESS_NAME,
+      taxID: BUSINESS_REG_NO,
+      founder: { "@type": "Person", name: BUSINESS_OWNER },
+      address: {
+        "@type": "PostalAddress",
+        addressCountry: "KR",
+        addressRegion: BUSINESS_ADDRESS.region,
+        addressLocality: BUSINESS_ADDRESS.locality,
+        streetAddress: BUSINESS_ADDRESS.street,
+      },
+      ...(CONTACT_EMAIL && {
+        email: CONTACT_EMAIL,
+        contactPoint: {
+          "@type": "ContactPoint",
+          contactType: "customer support",
+          email: CONTACT_EMAIL,
+          availableLanguage: "Korean",
+        },
+      }),
       url: `${SITE_URL}/`,
       logo: `${SITE_URL}/icon.png`,
       ...(SOCIAL_LINKS.length > 0 && { sameAs: SOCIAL_LINKS.map((l) => l.url) }),

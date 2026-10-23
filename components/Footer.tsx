@@ -1,7 +1,16 @@
 import Link from "next/link";
-import { CONTACT_EMAIL, SITE_NAME, SOCIAL_LINKS } from "@/lib/site";
+import {
+  BUSINESS_ADDRESS_TEXT,
+  BUSINESS_NAME,
+  BUSINESS_OWNER,
+  BUSINESS_REG_NO,
+  CONTACT_EMAIL,
+  CONTACT_HOURS,
+  SITE_NAME,
+  SOCIAL_LINKS,
+} from "@/lib/site";
 
-// 모든 페이지 맨 아래 푸터. 연락처·SNS는 lib/site.ts에서 관리한다(비어 있으면 "준비 중").
+// 모든 페이지 맨 아래 푸터. 사업자 정보·연락처·SNS는 lib/site.ts에서 관리한다.
 export default function Footer() {
   return (
     <footer className="mt-auto border-t border-black/5 bg-white">
@@ -9,16 +18,26 @@ export default function Footer() {
         <div>
           <p className="text-[16px] font-bold text-[#1d1d1f]">{SITE_NAME}</p>
           <p className="mt-1">함께 이어가는 즐거운 습관</p>
-          <p className="mt-6">
-            문의{" "}
-            {CONTACT_EMAIL ? (
-              <a href={`mailto:${CONTACT_EMAIL}`} className="text-[#1d1d1f] hover:underline">
-                {CONTACT_EMAIL}
-              </a>
-            ) : (
-              <span>준비 중</span>
-            )}
-          </p>
+
+          {/* 사업자 정보 */}
+          <div className="mt-6 flex flex-col gap-1 text-[13px]">
+            <p>
+              상호 {BUSINESS_NAME} · 대표 {BUSINESS_OWNER} · 사업자등록번호 {BUSINESS_REG_NO}
+            </p>
+            <p>주소 {BUSINESS_ADDRESS_TEXT}</p>
+            <p>
+              문의{" "}
+              {CONTACT_EMAIL ? (
+                <a href={`mailto:${CONTACT_EMAIL}`} className="text-[#1d1d1f] hover:underline">
+                  {CONTACT_EMAIL}
+                </a>
+              ) : (
+                <span>준비 중</span>
+              )}
+              {CONTACT_HOURS && ` (${CONTACT_HOURS})`}
+            </p>
+          </div>
+
           <p className="mt-4 text-[13px]">
             © {new Date().getFullYear()} {SITE_NAME}
           </p>
