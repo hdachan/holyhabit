@@ -13,6 +13,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: SITE_URL },
     // 글 목록은 최신 글이 올라올 때마다 바뀌므로 가장 최근 글 시각을 lastmod로 쓴다.
     { url: `${SITE_URL}${BLOG_PATH}`, lastModified: posts[0]?.updatedAt },
+    // 문의하기: 연락처가 있는 사이트라는 신뢰 신호
+    { url: `${SITE_URL}/contact` },
     ...posts.map((post) => ({
       url: `${SITE_URL}${postPath(post.slug)}`,
       lastModified: post.updatedAt,

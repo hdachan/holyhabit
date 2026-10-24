@@ -13,6 +13,7 @@ import { requiredRelatedCount, type PostOption } from "@/lib/related";
 import type { PostCta } from "@/lib/cta";
 import type { Post } from "@/lib/posts";
 import { POST_LABELS } from "@/lib/labels";
+import { SUMMARY_MAX, SUMMARY_VISIBLE } from "@/lib/summary";
 import { postPath } from "@/lib/site";
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
@@ -32,6 +33,8 @@ export default function AdminPostForm({ mode, initialPost, postOptions, authorNa
   const coverInputRef = useRef<HTMLInputElement>(null);
 
   const [title, setTitle] = useState(initialPost?.title ?? "");
+  // 검색 결과 한 줄 요약 (비우면 본문 앞부분 자동)
+  const [summary, setSummary] = useState(initialPost?.summary ?? "");
   const [slug, setSlug] = useState(initialPost?.slug ?? "");
   // 라벨: 새 글은 직접 고르게 비워둔다. 예전 라벨(예: "업데이트")이 붙은 글은 고르기 전까지 그대로 둔다.
   const [eyebrow, setEyebrow] = useState(initialPost?.eyebrow ?? "");
@@ -50,11 +53,11 @@ export default function AdminPostForm({ mode, initialPost, postOptions, authorNa
   );
   const requiredRelated = requiredRelatedCount(postOptions.length);
 
-  // 검색 노출 도우미: 검색어(①)·다른 표현(②)은 검사용이라 저장하지 않는다.
+  // 내용 도우미: 검색어(①)·다른 표현(②)은 검사용이라 저장하지 않는다.
   // 검사는 한 번만 돌리고, 결과를 오른쪽 패널과 각 입력 칸 아래에 나눠서 보여준다.
   const [seoKeyword, setSeoKeyword] = useState("");
   const [seoRelated, setSeoRelated] = useState("");
-  const seoInput = { title, slug, bodyHtml, coverImageUrl };
+  const seoInput = { title, summary, slug, bodyHtml, coverImageUrl };
   const seoChecks = runSeoChecks(seoInput, seoKeyword, seoRelated);
   const checksFor = (group: string) => seoChecks.filter((c) => c.group === group);
 
@@ -142,6 +145,7 @@ export default function AdminPostForm({ mode, initialPost, postOptions, authorNa
       if (mode === "create") {
         await createPost({
           title,
+          summary,
           slug,
           eyebrow,
           bodyHtml,
@@ -153,6 +157,7 @@ export default function AdminPostForm({ mode, initialPost, postOptions, authorNa
         await updatePost({
           originalSlug: initialPost!.slug,
           title,
+          summary,
           slug,
           eyebrow,
           bodyHtml,
@@ -173,7 +178,7 @@ export default function AdminPostForm({ mode, initialPost, postOptions, authorNa
   return (
     <div className="min-h-screen bg-[#f5f5f7]">
       {/* 좌우 여백을 모바일에서 줄이고, 세로 여백도 줄임 */}
-      {/* 넓은 화면: 왼쪽 글쓰기 + 오른쪽 검색 노출 도우미. 모바일: 도우미가 위에 접힌 상태로 */}
+      {/* 넓은 화면: 왼쪽 글쓰기 + 오른쪽 내용 도우미. 모바일: 도우미가 위에 접힌 상태로 */}
       <div className="mx-auto grid max-w-[1120px] items-start gap-6 px-4 py-10 sm:px-6 sm:py-16 lg:grid-cols-[minmax(0,720px)_340px]">
         <h1 className="text-[24px] font-bold text-[#1d1d1f] sm:text-[28px] lg:col-span-2">
           {mode === "create" ? "새 글 작성" : "글 수정"}
@@ -187,6 +192,7 @@ export default function AdminPostForm({ mode, initialPost, postOptions, authorNa
             onKeywordChange={setSeoKeyword}
             related={seoRelated}
             onRelatedChange={setSeoRelated}
+            aiMeta={{ label: eyebrow, authorName, publishedAt: initialPost?.publishedAt }}
           />
         </div>
 
@@ -251,6 +257,33 @@ export default function AdminPostForm({ mode, initialPost, postOptions, authorNa
               className="w-full min-w-0 resize-y rounded-lg border border-black/10 bg-white px-4 py-2 text-[#1d1d1f]"
             />
             <SeoChecks checks={checksFor("title")} />
+          </div>
+
+          {/* 검색 결과 한 줄 요약 (선택): 구글·네이버 검색 결과의 회색 설명문 */}
+          <div id="seo-summary" className="scroll-mt-6">
+            <label className="mb-1 block text-sm font-medium text-[#6e6e73]">
+              검색 결과에 보일 한 줄 요약 <span className="font-normal text-[#8e8e93]">(선택)</span>
+            </label>
+            <p className="mb-1.5 text-[12px] leading-[1.5] text-[#8e8e93]">
+              검색 결과에서 제목 아래에 나오는 설명이에요. 이 글에서 무엇을 알 수 있는지 한두 문장으로 써요.
+              비워 두면 본문 앞부분이 자동으로 쓰여요.
+            </p>
+            <textarea
+              value={summary}
+              onChange={(e) => setSummary(e.target.value)}
+              rows={2}
+              maxLength={SUMMARY_MAX}
+              placeholder="예: 헬스장 매너, 초보라면 이것만 알아도 충분해요. 기구 사용부터 정리까지 꼭 지켜야 할 7가지를 정리했어요."
+              className="w-full min-w-0 resize-y rounded-lg border border-black/10 bg-white px-4 py-2 text-[#1d1d1f]"
+            />
+            <p
+              className={`mt-1 text-right text-[12px] ${
+                summary.trim().length > SUMMARY_VISIBLE ? "text-amber-700" : "text-[#8e8e93]"
+              }`}
+            >
+              {summary.trim().length}자 · 앞 {SUMMARY_VISIBLE}자 정도가 보여요
+            </p>
+            <SeoChecks checks={checksFor("summary")} />
           </div>
 
           <div id="seo-slug" className="scroll-mt-6">
@@ -327,8 +360,9 @@ export default function AdminPostForm({ mode, initialPost, postOptions, authorNa
             <label className="mb-1 block text-sm font-medium text-[#6e6e73]">
               본문 (이미지는 툴바의 🖼️ 버튼으로 삽입, 5MB 이하)
             </label>
-            {/* 에디터 내부 툴바가 넘칠 경우를 대비해 가로 스크롤 허용 */}
-            <div className="w-full min-w-0 overflow-x-auto">
+            {/* overflow(가로 스크롤)를 두지 않는다: 있으면 에디터 툴바가 화면 위에 붙어 따라오지 못한다.
+                툴바는 좁은 화면에서 줄바꿈되므로 넘치지 않는다. */}
+            <div className="w-full min-w-0">
               <RichTextEditor
                 onChange={setBodyHtml}
                 initialContent={initialPost?.body}

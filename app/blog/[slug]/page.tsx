@@ -64,6 +64,9 @@ export async function generateMetadata({
       // 발행·수정 시각. 검색엔진과 SNS가 글의 최신성을 판단하는 데 쓴다.
       publishedTime: item.publishedAt,
       modifiedTime: item.updatedAt,
+      // 글 분류(라벨)와 작성자. 페이스북·카카오 등이 article:section, article:author로 읽는다.
+      section: item.eyebrow,
+      authors: [item.authorName],
       // 대표 이미지가 있으면 공유 썸네일로 사용, 없으면 사이트 기본 로고.
       // openGraph는 layout과 병합되지 않으므로 기본 이미지도 여기서 직접 지정해야 한다.
       images: [
@@ -97,6 +100,9 @@ export default async function NewsDetailPage({ params }: PageProps) {
     datePublished: item.publishedAt,
     dateModified: item.updatedAt,
     mainEntityOfPage: `${SITE_URL}${postPath(item.slug)}`,
+    // 글 분류(라벨: 헬스·런닝·기타). 검색엔진·AI가 글의 주제 묶음을 파악하는 데 쓴다.
+    articleSection: item.eyebrow,
+    inLanguage: "ko-KR",
     author: {
       "@type": "Person",
       name: item.authorName,

@@ -9,8 +9,19 @@ import { requiredRelatedCount } from "@/lib/related";
 import { checkAuthorInput, type Author } from "@/lib/authors";
 import { getAuthorById } from "@/lib/authors-db";
 import { isAllowedLabel, POST_LABELS } from "@/lib/labels";
+import { SUMMARY_MAX } from "@/lib/summary";
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+
+// 검색 결과 한 줄 요약: 공백을 정리하고 길이를 확인한다. (화면과 같은 기준: lib/summary.ts)
+function checkSummary(summary: string | undefined) {
+  const value = (summary ?? "").replace(/\s+/g, " ").trim();
+  if (value.length > SUMMARY_MAX) {
+    throw new Error(`검색 결과 한 줄 요약은 ${SUMMARY_MAX}자 이내로 써주세요. (지금 ${value.length}자)`);
+  }
+  // 비어 있으면 null로 저장 → 본문 앞부분이 자동 요약으로 쓰인다
+  return value || null;
+}
 
 // 영문 소문자, 숫자, 하이픈(-)만 허용. 한글/공백/특수문자는 전부 거부합니다.
 const SLUG_PATTERN = /^[a-z0-9]+(-[a-z0-9]+)*$/;
@@ -77,6 +88,7 @@ async function requireAuthorProfile(userId: string) {
 
 type CreatePostInput = {
   title: string;
+  summary: string;
   slug: string;
   eyebrow: string;
   bodyHtml: string;
@@ -126,6 +138,7 @@ export async function createPost(input: CreatePostInput) {
     cta: checkCta(input.cta),
     related_slugs: relatedSlugs,
     image_url: checkImageUrl(input.imageUrl),
+    summary: checkSummary(input.summary),
     author_id: user.id,
   });
 
@@ -199,6 +212,7 @@ export async function updatePost(input: UpdatePostInput) {
       cta: checkCta(input.cta),
       related_slugs: relatedSlugs,
       image_url: checkImageUrl(input.imageUrl),
+      summary: checkSummary(input.summary),
       // 수정 시각. sitemap lastmod·JSON-LD dateModified로 나가서
       // 검색엔진이 "이 글이 바뀌었다"를 알고 다시 수집하게 한다.
       updated_at: new Date().toISOString(),
@@ -349,4 +363,24 @@ export async function saveAuthorProfile(input: Author) {
 
   // 글 목록 캐시에 작성자 이름이 함께 들어 있어서 같이 갱신한다.
   updateTag("posts");
+}
+
+/** 문의함: 처리 상태 바꾸기 (new = 새 문의, done = 답변 완료) */
+export async function setInquiryStatus(id: number, status: "new" | "done") {
+  await requireAdmin();
+  if (status !== "new" && status !== "done") throw new Error("잘못된 상태예요.");
+  const supabase = createSupabaseAdminClient();
+  const { error } = await supabase.from("inquiries").update({ status }).eq("id", id);
+  if (error) throw new Error(error.message);
+}
+
+/**
+ * 문의함: 문의 삭제.
+ * 개인정보처리방침에 "처리 완료 후 지체 없이 파기"라고 안내하므로, 답변을 마친 문의는 지운다.
+ */
+export async function deleteInquiry(id: number) {
+  await requireAdmin();
+  const supabase = createSupabaseAdminClient();
+  const { error } = await supabase.from("inquiries").delete().eq("id", id);
+  if (error) throw new Error(error.message);
 }

@@ -19,7 +19,10 @@ export type Post = {
   updatedAt: string;
   imageUrl: string | null;
   body: string; // Tiptap 에디터에서 나온 HTML
-  excerpt: string; // 카드 미리보기용 — 본문에서 태그를 뺀 짧은 요약
+  // 검색 결과·공유 미리보기·RSS·목록 카드에 나가는 요약.
+  // 글쓴이가 쓴 "검색 결과 한 줄 요약"(summary)이 있으면 그것, 없으면 본문 앞부분 자동 요약.
+  excerpt: string;
+  summary: string; // 글쓴이가 직접 쓴 요약 (없으면 빈 문자열). 수정 화면에서 쓴다.
   cta: PostCta | null; // 글 하단 CTA (없으면 null)
   relatedSlugs: string[]; // 글쓴이가 고른 연관 콘텐츠 (없으면 빈 배열 → 자동 추천)
   // 작성자 (관리자 계정별 "내 작성자 정보"). 작성자가 연결되지 않은 예전 글은 기본 작성자.
@@ -50,6 +53,7 @@ function toPost(row: {
   updated_at?: string | null;
   cta?: unknown;
   related_slugs?: unknown;
+  summary?: string | null;
   author?: { name: string; bio: string | null } | null;
 }): Post {
   return {
@@ -65,7 +69,8 @@ function toPost(row: {
     updatedAt: row.updated_at ?? row.created_at,
     imageUrl: row.image_url,
     body: row.body,
-    excerpt: stripHtmlToExcerpt(row.body),
+    excerpt: row.summary?.trim() || stripHtmlToExcerpt(row.body),
+    summary: row.summary?.trim() ?? "",
     cta: parseCta(row.cta),
     relatedSlugs: parseRelatedSlugs(row.related_slugs),
     authorName: row.author?.name || AUTHOR_NAME,

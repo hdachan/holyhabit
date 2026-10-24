@@ -62,7 +62,10 @@ export default function RichTextEditor({
   const editor = useEditor({
     immediatelyRender: false,
     extensions: [
-      StarterKit,
+      // 소제목은 H2·H3만. 글 제목이 이미 H1이라 본문에 H1이 있으면 안 된다.
+      // (툴바엔 H2·H3만 있어도 "# "을 치거나 다른 곳에서 붙여넣으면 H1이 들어갔었다.
+      //  이제 "# "은 동작하지 않고, 붙여넣은 H1은 일반 문단이 된다)
+      StarterKit.configure({ heading: { levels: [2, 3] } }),
       ImageExtension.configure({
         HTMLAttributes: { class: "rounded-xl" },
       }),
@@ -207,9 +210,11 @@ function EditorBody({
   const handleImagePick = onImagePick;
   const [linkOpen, setLinkOpen] = useState(false);
   return (
-    <div className="overflow-hidden rounded-xl border border-black/10 bg-white">
-      {/* 툴바 */}
-      <div className="flex flex-wrap items-center gap-1 border-b border-black/10 bg-[#f5f5f7] p-2">
+    // overflow-hidden을 쓰지 않는다: 바깥에 overflow-hidden이 있으면 아래 sticky(따라오는 툴바)가 동작하지 않는다.
+    <div className="rounded-xl border border-black/10 bg-white">
+      {/* 툴바 + 사진 설명 칸: 글이 길어져 아래로 내려가도 화면 맨 위에 붙어서 따라온다 */}
+      <div className="sticky top-0 z-20 rounded-t-xl shadow-[0_1px_0_rgba(0,0,0,0.06)]">
+      <div className="flex flex-wrap items-center gap-1 rounded-t-xl border-b border-black/10 bg-[#f5f5f7] p-2">
         <ToolbarButton
           label="굵게"
           active={editor.isActive("bold")}
@@ -289,6 +294,7 @@ function EditorBody({
       </div>
 
       <ImageAltField editor={editor} />
+      </div>
 
       {linkOpen && (
         <LinkDialog
@@ -301,7 +307,7 @@ function EditorBody({
       <EditorContent editor={editor} />
 
       {error && (
-        <p className="border-t border-black/10 bg-red-50 px-4 py-2 text-[13px] text-red-600">
+        <p className="rounded-b-xl border-t border-black/10 bg-red-50 px-4 py-2 text-[13px] text-red-600">
           {error}
         </p>
       )}

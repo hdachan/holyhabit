@@ -16,6 +16,9 @@ function decodeEntities(text: string) {
 /** 태그를 지우고 공백을 정리한 본문 글자 */
 export function htmlToText(html: string) {
   return decodeEntities(html.replace(/<[^>]+>/g, " "))
+    // 보이지 않는 글자(폭 없는 공백 등). 다른 곳에서 복사해 붙여넣은 글에 섞여 들어와
+    // 요약문에 "“오운완”​ 이라는"처럼 이상한 띄어쓰기를 만든다.
+    .replace(/[​-‍﻿]/g, "")
     .replace(/\s+/g, " ")
     .trim();
 }

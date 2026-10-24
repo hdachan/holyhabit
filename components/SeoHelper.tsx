@@ -4,8 +4,10 @@ import { useState } from "react";
 import { htmlToText, stripHtmlToExcerpt } from "@/lib/text";
 import { checkAlt, extractAlts } from "@/lib/alt";
 import { SITE_NAME, postPath } from "@/lib/site";
+import { SUMMARY_MAX, SUMMARY_MIN, SUMMARY_VISIBLE } from "@/lib/summary";
+import AiReadPreview from "@/components/AiReadPreview";
 
-// 글쓰기 화면의 검색 노출 도우미.
+// 글쓰기 화면의 내용 도우미.
 // 기준은 "글 쓸 때 키워드 꿀팁" 가이드와 같다. 검사만 하고 저장을 막지는 않는다.
 // - SeoChecks: 각 입력 칸(제목·주소·대표 사진·본문) 바로 아래에 그 칸의 검사 결과를 보여준다.
 // - SeoHelper: 오른쪽 패널. 검색어 입력(①②), 영역별 점수, 검색 결과 미리보기.
@@ -13,7 +15,7 @@ import { SITE_NAME, postPath } from "@/lib/site";
 
 // tip: 선택 사항. 안 해도 되는 항목이라 점수에 넣지 않고, 통과 항목과 함께 접어서 보여준다.
 type Status = "pass" | "warn" | "fail" | "tip";
-export type CheckGroup = "title" | "slug" | "cover" | "body";
+export type CheckGroup = "title" | "summary" | "slug" | "cover" | "body";
 export type Check = {
   id: string;
   label: string;
@@ -27,6 +29,7 @@ type Tip = { why: string; bad?: string; good?: string };
 
 export type SeoInput = {
   title: string;
+  summary: string; // 검색 결과 한 줄 요약 (비우면 본문 앞부분이 자동으로 쓰인다)
   slug: string;
   bodyHtml: string;
   coverImageUrl: string | null;
@@ -37,6 +40,8 @@ const GROUP_OF: Record<string, { group: CheckGroup; section?: string }> = {
   "title-length": { group: "title" },
   "title-keyword": { group: "title" },
   "title-number": { group: "title" },
+  "summary-length": { group: "summary" },
+  "summary-keyword": { group: "summary" },
   slug: { group: "slug" },
   cover: { group: "cover" },
   "opening-keyword": { group: "body", section: "검색어" },
@@ -54,6 +59,7 @@ const GROUP_OF: Record<string, { group: CheckGroup; section?: string }> = {
 
 export const GROUP_LABEL: Record<CheckGroup, string> = {
   title: "제목",
+  summary: "검색 요약",
   slug: "주소",
   cover: "대표 사진",
   body: "본문",
@@ -89,8 +95,18 @@ const TIPS: Record<string, Tip> = {
     bad: "헬스장에서 지켜야 할 것들에 대한 이야기",
     good: "헬스장 매너 총정리: 초보가 모르는 7가지",
   },
+  "summary-length": {
+    why: "구글·네이버 검색 결과에서 제목 아래 회색 설명문으로 나가요. 사람들은 이걸 보고 클릭할지 정해요. 이 글에서 무엇을 알 수 있는지 한두 문장으로 쓰세요. 앞 80자 정도만 보이니 중요한 말을 앞에 두세요. 비워 두면 본문 앞부분이 자동으로 쓰여요.",
+    bad: "안녕하세요, 오늘은 운동 이야기를 해보려고 합니다.",
+    good: "헬스장 매너, 초보라면 이것만 알아도 충분해요. 기구 사용부터 정리까지 꼭 지켜야 할 7가지를 정리했어요.",
+  },
+  "summary-keyword": {
+    why: "검색한 말이 설명문에 있으면 굵게 표시돼서 눈에 잘 띄어요. 앞쪽에 자연스럽게 한 번 넣으세요.",
+    bad: "초보가 꼭 알아야 할 7가지를 정리했어요.",
+    good: "헬스장 매너, 초보가 꼭 알아야 할 7가지를 정리했어요.",
+  },
   "opening-keyword": {
-    why: "본문 맨 앞 120자가 검색 결과의 회색 요약문이 돼요. 실제로 보이는 건 약 80자라서 첫 1~2문장에 키워드와 읽을 이유를 넣어야 해요. 소제목도 글자 수에 포함돼요.",
+    why: "본문 첫 문장은 읽는 사람이 계속 읽을지 정하는 곳이에요. 위 \"검색 결과 한 줄 요약\"을 비워 두면 본문 맨 앞 120자가 검색 결과의 회색 요약문이 돼요. 실제로 보이는 건 약 80자라서 첫 1~2문장에 키워드와 읽을 이유를 넣어야 해요. 소제목도 글자 수에 포함돼요.",
     bad: "안녕하세요! 오늘은 날씨가 정말 좋네요. 요즘 저는...",
     good: "운동 습관이 3일을 못 가는 이유는 의지가 아니라 환경 때문입니다. 혼자 운동할 때 포기하기 쉬운 이유와 해결법을 정리했습니다.",
   },
@@ -177,7 +193,7 @@ export function runSeoChecks(input: SeoInput, keyword: string, related: string):
 }
 
 function runChecks(
-  { title, slug, bodyHtml, coverImageUrl }: SeoInput,
+  { title, summary, slug, bodyHtml, coverImageUrl }: SeoInput,
   keyword: string,
   relatedWords: string[]
 ): Omit<Check, "group" | "section">[] {
@@ -220,18 +236,45 @@ function runChecks(
     /\d/.test(oneLineTitle) ? "숫자가 있어요." : "\"3가지\", \"7가지\"처럼 숫자를 넣으면 클릭률이 올라가요."
   );
 
+  // ── 검색 결과 한 줄 요약 (선택). 비우면 본문 앞부분이 자동으로 쓰인다.
+  const oneLineSummary = summary.replace(/\s+/g, " ").trim();
+  if (!oneLineSummary) {
+    add("summary-length", "검색 결과 요약", "tip", "비워 두면 본문 앞부분이 자동으로 쓰여요. 직접 쓰면 클릭을 부르는 설명을 고를 수 있어요.");
+  } else if (oneLineSummary.length > SUMMARY_MAX) {
+    add("summary-length", "검색 결과 요약", "fail", `${oneLineSummary.length}자 — ${SUMMARY_MAX}자까지만 저장돼요.`);
+  } else if (oneLineSummary.length < SUMMARY_MIN) {
+    add("summary-length", "검색 결과 요약", "warn", `${oneLineSummary.length}자 — 너무 짧으면 검색엔진이 본문에서 아무 문장이나 가져가요. ${SUMMARY_MIN}~${SUMMARY_VISIBLE}자를 추천해요.`);
+  } else if (oneLineSummary.length > SUMMARY_VISIBLE) {
+    add("summary-length", "검색 결과 요약", "warn", `${oneLineSummary.length}자 — 앞 ${SUMMARY_VISIBLE}자 정도만 보여요. 중요한 말을 앞에 두세요.`);
+  } else {
+    add("summary-length", "검색 결과 요약", "pass", `${oneLineSummary.length}자 — 잘리지 않고 보여요.`);
+  }
+  if (oneLineSummary && kw) {
+    const hit = includesKeyword(oneLineSummary.slice(0, SUMMARY_VISIBLE), kw);
+    add(
+      "summary-keyword",
+      "요약에 키워드",
+      hit ? "pass" : "warn",
+      hit ? "보이는 부분에 키워드가 있어요. 검색 결과에서 굵게 표시돼요." : `요약 앞 ${SUMMARY_VISIBLE}자 안에 "${kw}"를 넣어주세요.`
+    );
+  }
+
   // ── 키워드
   if (!kw) {
-    add("keyword-count", "검색어 검사", "warn", "위 ①에 검색어를 적으면 제목·첫 문장·소제목·반복 횟수를 검사해요.");
+    add("keyword-count", "검색어 검사", "warn", "위 ①에 검색어를 적으면 제목·요약·첫 문장·소제목·반복 횟수를 검사해요.");
   } else {
     const opening = bodyText.slice(0, SNIPPET_VISIBLE);
+    const openingHit = includesKeyword(opening, kw);
+    // 요약을 직접 썼으면 검색 결과엔 요약이 나가므로 첫 문장은 "있으면 좋은" 항목이 된다.
     add(
       "opening-keyword",
       "첫 문장에 키워드",
-      includesKeyword(opening, kw) ? "pass" : "fail",
-      includesKeyword(opening, kw)
+      openingHit ? "pass" : oneLineSummary ? "tip" : "fail",
+      openingHit
         ? `본문 앞 ${SNIPPET_VISIBLE}자 안에 키워드가 있어요.`
-        : `본문 앞 ${SNIPPET_VISIBLE}자(검색 요약문)에 키워드를 넣어주세요.`
+        : oneLineSummary
+          ? "검색 결과엔 직접 쓴 요약이 나가요. 첫 문장에도 키워드가 있으면 읽는 사람이 더 빨리 이해해요."
+          : `본문 앞 ${SNIPPET_VISIBLE}자(검색 요약문)에 키워드를 넣거나, 위 "검색 결과 한 줄 요약"을 써주세요.`
     );
 
     const count = countOccurrences(bodyText, kw);
@@ -486,6 +529,7 @@ export default function SeoHelper({
   onKeywordChange,
   related,
   onRelatedChange,
+  aiMeta,
 }: {
   input: SeoInput;
   checks: Check[];
@@ -493,13 +537,16 @@ export default function SeoHelper({
   onKeywordChange: (value: string) => void;
   related: string;
   onRelatedChange: (value: string) => void;
+  // AI 미리보기에 쓰는 글 정보 (라벨·작성자·발행일)
+  aiMeta: { label: string; authorName: string | null; publishedAt?: string };
 }) {
   // 모바일에서도 ①② 입력이 중요해서 처음엔 펼쳐 둔다.
   const [open, setOpen] = useState(true);
   const passed = checks.filter((c) => c.status === "pass").length;
   const total = scored(checks).length;
   const oneLineTitle = input.title.replace(/\s+/g, " ").trim();
-  const snippet = stripHtmlToExcerpt(input.bodyHtml);
+  // 실제 사이트와 같은 규칙: 직접 쓴 요약이 있으면 그것, 없으면 본문 앞부분
+  const snippet = input.summary.replace(/\s+/g, " ").trim() || stripHtmlToExcerpt(input.bodyHtml);
 
   return (
     <aside className="rounded-[16px] bg-white p-5 shadow-sm lg:sticky lg:top-6 lg:max-h-[calc(100vh-48px)] lg:overflow-y-auto">
@@ -508,7 +555,7 @@ export default function SeoHelper({
         onClick={() => setOpen((v) => !v)}
         className="flex w-full items-center justify-between lg:pointer-events-none"
       >
-        <h2 className="text-[16px] font-bold text-[#1d1d1f]">검색 노출 도우미</h2>
+        <h2 className="text-[16px] font-bold text-[#1d1d1f]">내용 도우미</h2>
         <span className="text-[14px] font-semibold text-[#1d1d1f]">
           {passed}/{total}
           <span className="ml-2 text-[#8e8e93] lg:hidden">{open ? "▲" : "▼"}</span>
@@ -590,6 +637,16 @@ export default function SeoHelper({
             {snippet || "본문 앞부분이 요약문으로 나와요."}
           </p>
         </div>
+
+        {/* 검색엔진·AI가 가져가는 모습 (토글로 열기) */}
+        <AiReadPreview
+          title={input.title}
+          description={snippet}
+          label={aiMeta.label}
+          authorName={aiMeta.authorName}
+          publishedAt={aiMeta.publishedAt}
+          bodyHtml={input.bodyHtml}
+        />
       </div>
     </aside>
   );

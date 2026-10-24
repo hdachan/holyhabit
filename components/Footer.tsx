@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import {
   BUSINESS_ADDRESS_TEXT,
   BUSINESS_NAME,
@@ -17,7 +18,9 @@ export default function Footer() {
     <footer className="mt-auto border-t border-black/5 bg-white">
       <div className="mx-auto flex max-w-[1156px] flex-col gap-8 px-6 py-12 text-[14px] text-[#6e6e73] md:flex-row md:justify-between">
         <div>
-          <p className="text-[16px] font-bold text-[#1d1d1f]">{SITE_NAME}</p>
+          <Link href="/" className="inline-block">
+            <Image src="/logo.png" alt={SITE_NAME} width={140} height={32} className="h-7 w-auto object-contain" />
+          </Link>
           <p className="mt-1">함께 이어가는 즐거운 습관</p>
 
           {/* 사업자 정보 */}
@@ -58,6 +61,7 @@ export default function Footer() {
               {link.label} ↗
             </a>
           ))}
+          <Link href="/contact" className="hover:text-[#1d1d1f]">문의하기</Link>
           <Link href="/privacy" className="font-medium text-[#1d1d1f] hover:underline">
             개인정보처리방침
           </Link>

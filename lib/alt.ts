@@ -1,5 +1,5 @@
 // 본문 사진 설명(alt) 검사 규칙.
-// 에디터의 사진 설명 칸과 검색 노출 도우미가 같은 기준을 쓴다.
+// 에디터의 사진 설명 칸과 내용 도우미가 같은 기준을 쓴다.
 
 export type AltCheck = { ok: boolean; message: string };
 

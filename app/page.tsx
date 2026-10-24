@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import AboutSectionNav from "@/components/AboutSectionNav";
 import {
   SITE_URL,
@@ -12,7 +11,6 @@ import {
   BUSINESS_OWNER,
   BUSINESS_ADDRESS,
   CONTACT_EMAIL,
-  BLOG_PATH,
 } from "@/lib/site";
 import { pageOpenGraph } from "@/lib/seo";
 
@@ -182,10 +180,8 @@ function ImagePlaceholder({ className = "" }: { className?: string }) {
   return (
     <div
       aria-hidden
-      className={`flex w-full items-center justify-center rounded-[28px] bg-[#f2f4f6] text-[14px] text-[#b0b8c1] ${className}`}
-    >
-      사진 준비중
-    </div>
+      className={`w-full rounded-[28px] bg-[#f2f4f6] ${className}`}
+    />
   );
 }
 
@@ -243,8 +239,7 @@ export default function HomePage() {
 
       {/* 히어로: 페이지의 유일한 h1 */}
       <section className="mx-auto max-w-[1156px] px-6 pb-16 pt-20 text-center md:pb-24 md:pt-32">
-        <p className="text-[16px] font-bold text-[#e8893a] md:text-[18px]">함께 이어가는 즐거운 습관</p>
-        <h1 className="mt-4 text-[44px] font-bold leading-[1.15] tracking-tight text-[#191f28] md:text-[76px]">
+        <h1 className="text-[44px] font-bold leading-[1.15] tracking-tight text-[#191f28] md:text-[76px]">
           Your Journey.
           <br />
           Never Alone.
@@ -252,25 +247,6 @@ export default function HomePage() {
         <p className="mx-auto mt-6 max-w-[560px] text-[17px] leading-[1.7] text-[#4e5968] md:text-[20px]">
           즐거움이 발걸음이 되고, 함께가 길이 되는 여정
         </p>
-        <div className="mt-10 flex flex-wrap justify-center gap-3">
-          <Link
-            href={BLOG_PATH}
-            className="rounded-[14px] bg-[#f2a25c] px-7 py-4 text-[16px] font-bold text-white transition hover:bg-[#e8893a]"
-          >
-            습관 이야기 읽기
-          </Link>
-          {SOCIAL_LINKS.map((link) => (
-            <a
-              key={link.url}
-              href={link.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="rounded-[14px] bg-[#f2f4f6] px-7 py-4 text-[16px] font-bold text-[#333d4b] transition hover:bg-[#e5e8eb]"
-            >
-              {link.label} ↗
-            </a>
-          ))}
-        </div>
         <ImagePlaceholder className="mt-16 aspect-[16/9] md:mt-20 md:aspect-[21/9]" />
       </section>
 
@@ -339,23 +315,6 @@ export default function HomePage() {
             </div>
           </section>
         ))}
-
-        {/* 마무리: 소개를 다 읽은 사람이 콘텐츠로 이어지는 길 */}
-        <section className="mx-auto max-w-[1156px] px-6 pb-24 pt-8 md:pb-32">
-          <div className="rounded-[32px] bg-[#191f28] px-8 py-14 text-center md:py-20">
-            <p className="text-[24px] font-bold leading-[1.4] text-white md:text-[36px]">
-              작은 습관이 이어지는 이야기,
-              <br />
-              지금 읽어보세요.
-            </p>
-            <Link
-              href={BLOG_PATH}
-              className="mt-8 inline-block rounded-[14px] bg-[#f2a25c] px-7 py-4 text-[16px] font-bold text-white transition hover:bg-[#e8893a]"
-            >
-              콘텐츠 보러가기
-            </Link>
-          </div>
-        </section>
       </main>
     </div>
   );
