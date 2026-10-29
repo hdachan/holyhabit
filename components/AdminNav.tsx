@@ -12,7 +12,7 @@ const LINKS = [
   { href: "/admin/inquiries", label: "문의함" },
 ];
 
-export default function AdminNav({ email }: { email: string }) {
+export default function AdminNav({ email, waitingInquiries }: { email: string; waitingInquiries: number }) {
   const pathname = usePathname();
 
   // 수정 화면(/admin/edit/...)은 "글 관리" 메뉴에 속한 것으로 표시한다.
@@ -36,6 +36,12 @@ export default function AdminNav({ email }: { email: string }) {
               }`}
             >
               {link.label}
+              {/* 문의함: 확인이 필요한 수 (새 문의 + 답장을 기다리는 버그 제보) */}
+              {link.href === "/admin/inquiries" && waitingInquiries > 0 && (
+                <span className="ml-1.5 rounded-full bg-[#e8893a] px-1.5 py-0.5 text-[11px] font-bold text-white">
+                  {waitingInquiries}
+                </span>
+              )}
             </Link>
           ))}
           <Link

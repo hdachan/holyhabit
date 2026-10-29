@@ -10,6 +10,7 @@ import { checkAuthorInput, type Author } from "@/lib/authors";
 import { getAuthorById } from "@/lib/authors-db";
 import { isAllowedLabel, POST_LABELS } from "@/lib/labels";
 import { SUMMARY_MAX } from "@/lib/summary";
+import { MESSAGE_MAX, type ChatMessage, type ChatPoll } from "@/lib/inquiry";
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 
@@ -365,7 +366,11 @@ export async function saveAuthorProfile(input: Author) {
   updateTag("posts");
 }
 
-/** 문의함: 처리 상태 바꾸기 (new = 새 문의, done = 답변 완료) */
+/**
+ * 문의함: 처리 상태 바꾸기.
+ * 문의하기는 답변 완료(done) / 새 문의(new), 버그 제보는 해결 완료(done) / 다시 열기(new).
+ * 버그 제보를 해결 완료하면 방문자 채팅방의 입력칸이 잠긴다.
+ */
 export async function setInquiryStatus(id: number, status: "new" | "done") {
   await requireAdmin();
   if (status !== "new" && status !== "done") throw new Error("잘못된 상태예요.");
@@ -383,4 +388,60 @@ export async function deleteInquiry(id: number) {
   const supabase = createSupabaseAdminClient();
   const { error } = await supabase.from("inquiries").delete().eq("id", id);
   if (error) throw new Error(error.message);
+}
+
+/** 문의함 버그 제보 채팅: afterId보다 나중 메시지와 해결 완료 여부 (삭제됐으면 null) */
+export async function getAdminInquiryMessages(id: number, afterId: number): Promise<ChatPoll | null> {
+  await requireAdmin();
+  const supabase = createSupabaseAdminClient();
+  const { data: inquiry } = await supabase.from("inquiries").select("id, status").eq("id", id).maybeSingle();
+  if (!inquiry) return null;
+  const { data, error } = await supabase
+    .from("inquiry_messages")
+    .select("id, sender, body, created_at")
+    .eq("inquiry_id", id)
+    .gt("id", Number(afterId) || 0)
+    .order("id");
+  if (error) throw new Error(error.message);
+  return {
+    messages: (data ?? []).map((row) => ({
+      id: row.id,
+      sender: row.sender === "admin" ? "admin" : "user",
+      body: row.body,
+      createdAt: row.created_at,
+    })),
+    closed: inquiry.status === "done",
+  };
+}
+
+/** 문의함 버그 제보 채팅: 관리자 답장 보내기 */
+export async function sendAdminInquiryMessage(
+  id: number,
+  body: string
+): Promise<{ message: ChatMessage } | { error: string }> {
+  await requireAdmin();
+  const text = typeof body === "string" ? body.trim() : "";
+  if (!text) return { error: "메시지를 입력해주세요." };
+  if (text.length > MESSAGE_MAX) return { error: `메시지는 ${MESSAGE_MAX}자까지 보낼 수 있어요.` };
+
+  const supabase = createSupabaseAdminClient();
+  const { data: inquiry } = await supabase.from("inquiries").select("kind, status").eq("id", id).maybeSingle();
+  if (!inquiry) return { error: "삭제된 제보예요." };
+  // 문의하기는 채팅이 없다 (이메일로 답장)
+  if (inquiry.kind !== "bug") return { error: "문의하기는 이메일로 답장해주세요." };
+  if (inquiry.status === "done") return { error: "해결 완료된 제보예요. 위의 \"다시 열기\"를 누른 뒤 보내주세요." };
+
+  const { data, error } = await supabase
+    .from("inquiry_messages")
+    .insert({ inquiry_id: id, sender: "admin", body: text })
+    .select("id, sender, body, created_at")
+    .single();
+  if (error || !data) return { error: "보내지 못했어요. 문의가 삭제됐는지 확인해주세요." };
+
+  await supabase
+    .from("inquiries")
+    .update({ last_message_at: data.created_at, last_sender: "admin" })
+    .eq("id", id);
+
+  return { message: { id: data.id, sender: "admin", body: data.body, createdAt: data.created_at } };
 }

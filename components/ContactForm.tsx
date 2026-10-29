@@ -3,16 +3,11 @@
 import { useState } from "react";
 import Link from "next/link";
 import { submitInquiry } from "@/app/contact/actions";
-import {
-  INQUIRY_CONTENT_MAX,
-  INQUIRY_TYPES,
-  checkInquiry,
-} from "@/lib/inquiry";
+import { INQUIRY_CONTENT_MAX, INQUIRY_TYPES, checkInquiry } from "@/lib/inquiry";
 import { CONTACT_HOURS } from "@/lib/site";
+import ConsentBox, { HoneypotField, inputClass } from "@/components/ConsentBox";
 
-const inputClass =
-  "w-full rounded-[10px] border border-[#dcdee3] bg-white px-4 py-3 text-[15px] text-[#212124] placeholder:text-[#adb1ba] focus:border-[#212124] focus:outline-none";
-
+// 문의하기 탭: 양식으로 한 번 보내고 끝. 답장은 이메일로 드린다.
 export default function ContactForm() {
   const [type, setType] = useState("");
   const [email, setEmail] = useState("");
@@ -119,39 +114,8 @@ export default function ContactForm() {
         </p>
       </div>
 
-      {/* 스팸 방지: 사람에게는 보이지 않는 칸 (자동 프로그램만 채운다) */}
-      <div aria-hidden className="absolute left-[-9999px] h-0 w-0 overflow-hidden">
-        <label>
-          웹사이트
-          <input tabIndex={-1} autoComplete="off" value={website} onChange={(e) => setWebsite(e.target.value)} />
-        </label>
-      </div>
-
-      {/* 개인정보 수집·이용 동의 (개인정보 보호법: 수집 항목·목적·보유 기간을 알리고 동의를 받는다) */}
-      <div className="rounded-[12px] bg-[#f2f3f6] p-5 text-[14px] leading-[1.7] text-[#4d5159]">
-        <p className="font-semibold text-[#212124]">개인정보 수집·이용 안내</p>
-        <ul className="mt-2 list-disc pl-5">
-          <li>수집 항목: 이메일 주소, 문의 유형, 문의 내용</li>
-          <li>이용 목적: 문의 확인 및 답변</li>
-          <li>보유 기간: 문의 처리 완료 후 지체 없이 파기 (관련 법령에 따라 보관이 필요한 경우 해당 기간)</li>
-        </ul>
-        <p className="mt-2">
-          동의하지 않을 수 있으며, 이 경우 문의 접수가 어려워요. 자세한 내용은{" "}
-          <Link href="/privacy" className="underline">
-            개인정보처리방침
-          </Link>
-          을 확인해주세요.
-        </p>
-        <label className="mt-4 flex cursor-pointer items-center gap-2 font-semibold text-[#212124]">
-          <input
-            type="checkbox"
-            checked={agreed}
-            onChange={(e) => setAgreed(e.target.checked)}
-            className="h-5 w-5 accent-[#212124]"
-          />
-          개인정보 수집·이용에 동의합니다 (필수)
-        </label>
-      </div>
+      <HoneypotField value={website} onChange={setWebsite} />
+      <ConsentBox items="이메일 주소, 문의 유형, 문의 내용" agreed={agreed} onChange={setAgreed} />
 
       {error && <p className="text-[14px] text-red-600">{error}</p>}
 

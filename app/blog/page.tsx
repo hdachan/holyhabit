@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { getAllPosts } from "@/lib/posts";
 import PostGrid from "@/components/PostGrid";
-import { BLOG_PATH, SITE_NAME, SOCIAL_LINKS } from "@/lib/site";
+import { BLOG_PATH, SITE_NAME, SITE_URL, SOCIAL_LINKS, postPath } from "@/lib/site";
 import { pageOpenGraph } from "@/lib/seo";
 
 const BLOG_DESCRIPTION =
@@ -28,8 +28,47 @@ export const metadata: Metadata = {
 // (자세한 내용은 lib/posts.ts 참고)
 export default async function BlogPage() {
   const posts = await getAllPosts();
+
+  // 검색엔진용: 이 페이지가 holyhabit의 글 모음이고, 어떤 글들이 들어 있는지 알려준다.
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "CollectionPage",
+        name: `콘텐츠 | ${SITE_NAME}`,
+        description: BLOG_DESCRIPTION,
+        url: `${SITE_URL}${BLOG_PATH}`,
+        inLanguage: "ko-KR",
+        isPartOf: { "@type": "WebSite", name: SITE_NAME, url: `${SITE_URL}/` },
+        mainEntity: {
+          "@type": "ItemList",
+          itemListElement: posts.map((post, i) => ({
+            "@type": "ListItem",
+            position: i + 1,
+            name: post.seoTitle,
+            url: `${SITE_URL}${postPath(post.slug)}`,
+          })),
+        },
+      },
+      {
+        "@type": "BreadcrumbList",
+        itemListElement: [
+          { "@type": "ListItem", position: 1, name: SITE_NAME, item: `${SITE_URL}/` },
+          { "@type": "ListItem", position: 2, name: "콘텐츠" },
+        ],
+      },
+    ],
+  };
+
   return (
     <main className="flex-1 bg-white">
+      <script
+        type="application/ld+json"
+        // "<"를 이스케이프해서 글 제목에 "</script>"가 들어가도 태그가 깨지지 않게 한다.
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c"),
+        }}
+      />
       <div className="mx-auto max-w-[1156px] px-6 pb-24 pt-12 md:pt-16">
         <div className="mb-10 flex flex-wrap items-end justify-between gap-4">
           <h1 className="text-[32px] font-bold tracking-tight text-[#212124] md:text-[40px]">

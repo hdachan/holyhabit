@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { getCurrentUser, isAdminEmail } from "@/lib/auth";
 import { signOut } from "@/app/auth-actions";
 import AdminNav from "@/components/AdminNav";
+import { createSupabaseAdminClient } from "@/lib/supabase";
 
 export const metadata: Metadata = {
   robots: { index: false, follow: false },
@@ -33,9 +34,16 @@ export default async function AdminLayout({
     );
   }
 
+  // 메뉴의 "문의함" 옆에 확인이 필요한 수를 표시한다: 새 문의 + 답장을 기다리는 버그 제보
+  const { count: waitingInquiries } = await createSupabaseAdminClient()
+    .from("inquiries")
+    .select("id", { count: "exact", head: true })
+    .eq("status", "new")
+    .or("kind.eq.inquiry,last_sender.eq.user");
+
   return (
     <>
-      <AdminNav email={user.email ?? ""} />
+      <AdminNav email={user.email ?? ""} waitingInquiries={waitingInquiries ?? 0} />
       {children}
     </>
   );
