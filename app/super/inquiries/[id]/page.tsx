@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { requireAdmin } from "@/lib/auth";
+import { requireSuperAdmin } from "@/lib/auth";
 import { createSupabaseAdminClient } from "@/lib/supabase";
 import AdminInquiryChat from "@/components/AdminInquiryChat";
 import InquiryActions from "@/components/InquiryActions";
@@ -22,7 +22,7 @@ const dateTimeFormatter = new Intl.DateTimeFormat("ko-KR", {
 
 // 문의함 상세. 문의는 내용을 보고 이메일로 답장하고, 버그 제보는 채팅으로 주고받는다.
 export default async function AdminInquiryPage({ params }: PageProps) {
-  await requireAdmin();
+  await requireSuperAdmin();
   const id = Number((await params).id);
   if (!Number.isInteger(id)) notFound();
 
@@ -59,7 +59,7 @@ export default async function AdminInquiryPage({ params }: PageProps) {
     <div className="min-h-screen bg-[#f5f5f7]">
       <div className="mx-auto max-w-[860px] px-6 py-16">
         <Link
-          href={`/admin/inquiries${isBug ? "?kind=bug" : ""}`}
+          href={`/super/inquiries${isBug ? "?kind=bug" : ""}`}
           className="text-[14px] text-[#6e6e73] hover:text-[#1d1d1f]"
         >
           ← {isBug ? "버그 제보" : "문의"} 목록

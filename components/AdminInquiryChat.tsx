@@ -22,7 +22,7 @@ export default function AdminInquiryChat({
   const fetchNew = useCallback((afterId: number) => getAdminInquiryMessages(id, afterId), [id]);
   const send = useCallback((body: string) => sendAdminInquiryMessage(id, body), [id]);
   // 다른 관리자가 삭제한 경우 목록으로 돌아간다.
-  const onGone = useCallback(() => router.push("/admin/inquiries"), [router]);
+  const onGone = useCallback(() => router.push("/super/inquiries"), [router]);
 
   return (
     <ChatThread

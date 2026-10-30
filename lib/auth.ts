@@ -38,3 +38,25 @@ export async function requireAdmin() {
   }
   return user;
 }
+
+// 슈퍼 관리자: /super(문의함·지출)를 볼 수 있는 계정. 환경변수 SUPER_ADMIN_EMAILS에 쉼표로 구분해서 넣는다.
+// 문의·버그 제보에는 방문자 개인정보(이메일)가 있어서 일반 관리자(글 작성자)와 분리한다.
+function getSuperAdminEmails() {
+  return (process.env.SUPER_ADMIN_EMAILS ?? "")
+    .split(",")
+    .map((email) => email.trim().toLowerCase())
+    .filter(Boolean);
+}
+
+export function isSuperAdminEmail(email: string | undefined) {
+  return !!email && getSuperAdminEmails().includes(email.toLowerCase());
+}
+
+/** 슈퍼 관리자 기능(문의함·지출)의 Server Action과 화면 맨 앞에서 호출한다. */
+export async function requireSuperAdmin() {
+  const user = await getCurrentUser();
+  if (!user || !isSuperAdminEmail(user.email)) {
+    throw new Error("슈퍼 관리자만 쓸 수 있어요. 다시 로그인해주세요.");
+  }
+  return user;
+}

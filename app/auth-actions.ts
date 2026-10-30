@@ -2,15 +2,16 @@
 
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase-server";
-import { isAdminEmail } from "@/lib/auth";
+import { isAdminEmail, isSuperAdminEmail } from "@/lib/auth";
 
 export type LoginState = { error: string } | null;
 
-// 로그인 후 이동할 주소. 외부 사이트로 튕겨 나가지 않도록 /admin 하위만 허용한다.
-function safeNext(next: FormDataEntryValue | null) {
-  return typeof next === "string" && /^\/admin(\/|$)/.test(next)
+// 로그인 후 이동할 주소. 외부 사이트로 튕겨 나가지 않도록 /admin, /super 하위만 허용한다.
+// 따로 가려던 곳이 없으면 슈퍼 관리자는 지출 화면, 일반 관리자는 글 관리로 간다.
+function safeNext(next: FormDataEntryValue | null, fallback: string) {
+  return typeof next === "string" && /^\/(admin|super)(\/|$)/.test(next) && next !== "/admin"
     ? next
-    : "/admin";
+    : fallback;
 }
 
 export async function signIn(
@@ -40,7 +41,7 @@ export async function signIn(
     return { error: "관리자 권한이 없는 계정이에요." };
   }
 
-  redirect(safeNext(formData.get("next")));
+  redirect(safeNext(formData.get("next"), isSuperAdminEmail(data.user.email) ? "/super/expenses" : "/admin"));
 }
 
 export async function signOut() {

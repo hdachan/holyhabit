@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { requireAdmin } from "@/lib/auth";
+import { requireSuperAdmin } from "@/lib/auth";
 import { createSupabaseAdminClient } from "@/lib/supabase";
 import type { InquiryKind } from "@/lib/inquiry";
 
@@ -40,13 +40,13 @@ const STATUS_LABELS: Record<InquiryKind, { new: string; done: string }> = {
 };
 
 /*
- * 관리자 문의함. 관리자 모두가 같은 문의함을 쓴다.
+ * 문의함 (/super/inquiries). 슈퍼 관리자(SUPER_ADMIN_EMAILS)만 볼 수 있다.
  * - 문의: 문의하기 양식으로 들어온 것. 이메일로 답장하고 "답변 완료"로 옮긴다.
  * - 버그 제보: 채팅방. 채팅으로 답하고, 끝나면 "해결 완료"로 닫는다.
  * 확인이 필요한 것을 맨 위에, 그 안에서는 최근 순으로 보여준다.
  */
 export default async function AdminInquiriesPage({ searchParams }: PageProps) {
-  await requireAdmin();
+  await requireSuperAdmin();
   const params = await searchParams;
   const kind: InquiryKind = params.kind === "bug" ? "bug" : "inquiry";
   const status = params.status === "done" ? "done" : "new";
@@ -69,7 +69,7 @@ export default async function AdminInquiriesPage({ searchParams }: PageProps) {
     if (k === "bug") query.set("kind", "bug");
     if (s === "done") query.set("status", "done");
     const qs = query.toString();
-    return `/admin/inquiries${qs ? `?${qs}` : ""}`;
+    return `/super/inquiries${qs ? `?${qs}` : ""}`;
   };
   const kindTabs: { key: InquiryKind; label: string }[] = [
     { key: "inquiry", label: "문의" },
@@ -148,7 +148,7 @@ export default async function AdminInquiriesPage({ searchParams }: PageProps) {
               return (
                 <Link
                   key={q.id}
-                  href={`/admin/inquiries/${q.id}`}
+                  href={`/super/inquiries/${q.id}`}
                   className="block rounded-[16px] bg-white px-5 py-4 shadow-sm transition hover:shadow-md"
                 >
                   <div className="flex flex-wrap items-center gap-2 text-[13px] font-medium text-[#6e6e73]">

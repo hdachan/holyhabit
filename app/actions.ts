@@ -3,7 +3,7 @@
 import { updateTag } from "next/cache";
 import { createSupabaseAdminClient } from "@/lib/supabase";
 import { sanitizePostHtml } from "@/lib/sanitize";
-import { requireAdmin } from "@/lib/auth";
+import { requireAdmin, requireSuperAdmin } from "@/lib/auth";
 import { parseCta, type PostCta } from "@/lib/cta";
 import { requiredRelatedCount } from "@/lib/related";
 import { checkAuthorInput, type Author } from "@/lib/authors";
@@ -372,7 +372,7 @@ export async function saveAuthorProfile(input: Author) {
  * 버그 제보를 해결 완료하면 방문자 채팅방의 입력칸이 잠긴다.
  */
 export async function setInquiryStatus(id: number, status: "new" | "done") {
-  await requireAdmin();
+  await requireSuperAdmin();
   if (status !== "new" && status !== "done") throw new Error("잘못된 상태예요.");
   const supabase = createSupabaseAdminClient();
   const { error } = await supabase.from("inquiries").update({ status }).eq("id", id);
@@ -384,7 +384,7 @@ export async function setInquiryStatus(id: number, status: "new" | "done") {
  * 개인정보처리방침에 "처리 완료 후 지체 없이 파기"라고 안내하므로, 답변을 마친 문의는 지운다.
  */
 export async function deleteInquiry(id: number) {
-  await requireAdmin();
+  await requireSuperAdmin();
   const supabase = createSupabaseAdminClient();
   const { error } = await supabase.from("inquiries").delete().eq("id", id);
   if (error) throw new Error(error.message);
@@ -392,7 +392,7 @@ export async function deleteInquiry(id: number) {
 
 /** 문의함 버그 제보 채팅: afterId보다 나중 메시지와 해결 완료 여부 (삭제됐으면 null) */
 export async function getAdminInquiryMessages(id: number, afterId: number): Promise<ChatPoll | null> {
-  await requireAdmin();
+  await requireSuperAdmin();
   const supabase = createSupabaseAdminClient();
   const { data: inquiry } = await supabase.from("inquiries").select("id, status").eq("id", id).maybeSingle();
   if (!inquiry) return null;
@@ -419,7 +419,7 @@ export async function sendAdminInquiryMessage(
   id: number,
   body: string
 ): Promise<{ message: ChatMessage } | { error: string }> {
-  await requireAdmin();
+  await requireSuperAdmin();
   const text = typeof body === "string" ? body.trim() : "";
   if (!text) return { error: "메시지를 입력해주세요." };
   if (text.length > MESSAGE_MAX) return { error: `메시지는 ${MESSAGE_MAX}자까지 보낼 수 있어요.` };

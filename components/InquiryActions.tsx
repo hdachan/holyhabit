@@ -41,7 +41,7 @@ export default function InquiryActions({
   const isBug = kind === "bug";
   const doneLabel = isBug ? "해결 완료" : "답변 완료로 표시";
   const undoLabel = isBug ? "다시 열기" : "새 문의로 되돌리기";
-  const listHref = `/admin/inquiries${isBug ? "?kind=bug" : ""}`;
+  const listHref = `/super/inquiries${isBug ? "?kind=bug" : ""}`;
 
   return (
     <div className="flex flex-wrap items-center gap-2">
