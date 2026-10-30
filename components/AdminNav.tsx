@@ -34,13 +34,14 @@ export default function AdminNav({
 
   return (
     <div className="border-b border-black/5 bg-white">
-      <div className="mx-auto flex max-w-[860px] flex-wrap items-center gap-x-6 gap-y-2 px-6 py-3">
-        <nav className="flex items-center gap-1">
+      <div className="mx-auto flex max-w-[860px] flex-wrap items-center gap-x-6 gap-y-2 px-4 py-3 md:px-6">
+        {/* 모바일: 메뉴가 줄바꿈되지 않고 한 줄로 옆으로 밀어서 본다 */}
+        <nav className="-mx-4 flex w-[calc(100%+2rem)] items-center gap-1 overflow-x-auto px-4 [scrollbar-width:none] md:mx-0 md:w-auto md:overflow-visible md:px-0 [&::-webkit-scrollbar]:hidden">
           {links.map((link) => (
             <Link
               key={link.href}
               href={link.href}
-              className={`rounded-full px-4 py-1.5 text-[14px] font-medium ${
+              className={`shrink-0 whitespace-nowrap rounded-full px-3.5 py-1.5 text-[14px] font-medium md:px-4 ${
                 isActive(link.href)
                   ? "bg-[#1d1d1f] text-white"
                   : "text-[#6e6e73] hover:text-[#1d1d1f]"
@@ -58,15 +59,15 @@ export default function AdminNav({
           <Link
             href="/"
             target="_blank"
-            className="px-4 py-1.5 text-[14px] text-[#6e6e73] hover:text-[#1d1d1f]"
+            className="shrink-0 whitespace-nowrap px-3.5 py-1.5 text-[14px] text-[#6e6e73] hover:text-[#1d1d1f] md:px-4"
           >
             사이트 보기 ↗
           </Link>
         </nav>
-        <div className="ml-auto flex items-center gap-4 text-[13px] text-[#6e6e73]">
-          <span>{email}</span>
+        <div className="ml-auto flex min-w-0 items-center gap-4 text-[13px] text-[#6e6e73]">
+          <span className="truncate">{email}</span>
           <form action={signOut}>
-            <button className="hover:text-[#1d1d1f]">로그아웃</button>
+            <button className="shrink-0 whitespace-nowrap hover:text-[#1d1d1f]">로그아웃</button>
           </form>
         </div>
       </div>

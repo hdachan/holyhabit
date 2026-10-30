@@ -13,14 +13,19 @@ export default async function ExpensesPage() {
 
   const { data, error } = await createSupabaseAdminClient()
     .from("ledger_months")
-    .select("month, income, fixed, days")
+    .select("month, income, fixed, days, updated_at")
     .eq("book", "personal");
   if (error) throw new Error(`가계부를 불러오지 못했어요: ${error.message}`);
 
   const months: Record<string, LedgerMonth> = {};
+  // 달마다 마지막 저장 시각: 다른 기기에서 바뀌었는지 확인하는 데 쓴다
+  const versions: Record<string, string> = {};
   for (const row of data ?? []) {
     const clean = cleanLedgerMonth(row.month, row);
-    if (clean) months[row.month] = clean;
+    if (clean) {
+      months[row.month] = clean;
+      versions[row.month] = row.updated_at;
+    }
   }
 
   return (
@@ -31,7 +36,7 @@ export default async function ExpensesPage() {
           <span className="-mb-px border-b-2 border-[#1d1d1f] pb-3 text-[16px] font-semibold text-[#1d1d1f]">개인</span>
           <span className="pb-3 text-[16px] font-semibold text-[#adb1ba]">회사 (준비 중)</span>
         </div>
-        <ExpenseLedger today={today} initialMonths={months} />
+        <ExpenseLedger today={today} initialMonths={months} initialVersions={versions} />
       </div>
     </div>
   );

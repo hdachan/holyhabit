@@ -61,7 +61,7 @@ function toLedger(m: MonthData): LedgerMonth {
 }
 
 const SAVE_DELAY_MS = 800;
-type SaveState = "saved" | "saving" | "error";
+type SaveState = "saved" | "saving" | "error" | "conflict";
 
 const EMPTY = (): MonthData => ({ income: [], fixed: [], daily: {} });
 const EMPTY_DAY: DayEntry = { amount: null, memo: "", expr: "" };
@@ -211,10 +211,13 @@ function ItemList({
 export default function ExpenseLedger({
   today,
   initialMonths,
+  initialVersions,
 }: {
   today: string;
   // DB에 저장된 달들 (키 = "2026-10")
   initialMonths: Record<string, LedgerMonth>;
+  // 달마다 DB의 마지막 저장 시각(updated_at). 저장할 때 다른 기기에서 바뀌었는지 확인하는 데 쓴다.
+  initialVersions: Record<string, string>;
 }) {
   // today = "2026-10-30" (한국 시간)
   const todayKey = today.slice(0, 7);
@@ -225,21 +228,30 @@ export default function ExpenseLedger({
   );
 
   // ---- 자동 저장: 고친 달을 기억해 두었다가 0.8초 동안 더 고치지 않으면 저장 ----
+  // 다른 기기에서 먼저 저장한 달이면(conflict) 덮어쓰지 않고 멈춘 뒤 새로고침을 안내한다.
   const [saveState, setSaveState] = useState<SaveState>("saved");
   const [saveError, setSaveError] = useState<string | null>(null);
   const dirty = useRef(new Set<string>());
   const dataRef = useRef(data);
+  const versions = useRef<Record<string, string>>(initialVersions);
+  const conflicted = useRef(false);
   useEffect(() => {
     dataRef.current = data;
-    if (dirty.current.size === 0) return;
+    if (dirty.current.size === 0 || conflicted.current) return;
     const timer = setTimeout(async () => {
       const months = [...dirty.current];
       dirty.current.clear();
       setSaveState("saving");
       try {
         for (const key of months) {
-          const result = await saveLedgerMonth("personal", key, toLedger(dataRef.current[key]));
+          const result = await saveLedgerMonth("personal", key, toLedger(dataRef.current[key]), versions.current[key] ?? null);
+          if ("conflict" in result) {
+            conflicted.current = true;
+            setSaveState("conflict");
+            return;
+          }
           if ("error" in result) throw new Error(result.error);
+          versions.current[key] = result.updatedAt;
         }
         setSaveState("saved");
         setSaveError(null);
@@ -252,10 +264,10 @@ export default function ExpenseLedger({
     return () => clearTimeout(timer);
   }, [data]);
 
-  // 저장 전에 창을 닫으려 하면 경고
+  // 저장 전에 창을 닫으려 하면 경고 (다른 기기와 겹쳐 멈춘 경우는 새로고침해야 하므로 제외)
   useEffect(() => {
     const warn = (e: BeforeUnloadEvent) => {
-      if (dirty.current.size > 0) e.preventDefault();
+      if (dirty.current.size > 0 && !conflicted.current) e.preventDefault();
     };
     window.addEventListener("beforeunload", warn);
     return () => window.removeEventListener("beforeunload", warn);
@@ -374,13 +386,29 @@ export default function ExpenseLedger({
         </button>
       </div>
 
-      <p
-        className={`-mt-2 mb-4 text-center text-[13px] ${
-          saveState === "error" ? "text-red-600" : "text-[#868b94]"
-        }`}
-      >
-        {saveState === "saving" ? "저장 중..." : saveState === "error" ? `⚠️ ${saveError} (고치면 다시 시도해요)` : "자동 저장돼요 ✓"}
-      </p>
+      {saveState === "conflict" ? (
+        <div className="mb-4 rounded-[12px] bg-[#fff4ea] px-4 py-3 text-center text-[14px] text-[#4d5159]">
+          <p className="font-semibold text-[#1d1d1f]">⚠️ 다른 기기에서 이 가계부가 바뀌었어요</p>
+          <p className="mt-1">
+            겹쳐서 지워지지 않게 저장을 멈췄어요. 새로고침해서 최신 내용을 불러온 뒤, 방금 고친 내용을 다시 적어주세요.
+          </p>
+          <button
+            type="button"
+            onClick={() => window.location.reload()}
+            className="mt-3 rounded-[10px] bg-[#1d1d1f] px-5 py-2 text-[14px] font-semibold text-white hover:opacity-90"
+          >
+            새로고침
+          </button>
+        </div>
+      ) : (
+        <p
+          className={`-mt-2 mb-4 text-center text-[13px] ${
+            saveState === "error" ? "text-red-600" : "text-[#868b94]"
+          }`}
+        >
+          {saveState === "saving" ? "저장 중..." : saveState === "error" ? `⚠️ ${saveError} (고치면 다시 시도해요)` : "자동 저장돼요 ✓"}
+        </p>
+      )}
 
       {/* 빠른 입력: 진행 중인 달에서 오늘(또는 고른 날) 사용 금액 */}
       {isCurrent && (
