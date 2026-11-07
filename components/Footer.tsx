@@ -12,11 +12,11 @@ import {
   BLOG_PATH,
 } from "@/lib/site";
 
-// 모든 페이지 맨 아래 푸터. 사업자 정보·연락처·SNS는 lib/site.ts에서 관리한다.
+// 모든 페이지 맨 아래 푸터 (서브 색 #00B7FE 바탕, lib/site.ts의 SUB_COLOR). 사업자 정보·연락처·SNS는 lib/site.ts에서 관리한다.
 export default function Footer() {
   return (
-    <footer className="mt-auto border-t border-black/5 bg-white">
-      <div className="mx-auto flex max-w-[1156px] flex-col gap-8 px-6 py-12 text-[14px] text-[#6e6e73] md:flex-row md:justify-between">
+    <footer className="mt-auto bg-[#00B7FE]">
+      <div className="mx-auto flex max-w-[1156px] flex-col gap-8 px-6 py-12 text-[14px] text-black/70 md:flex-row md:justify-between">
         <div>
           <Link href="/" className="inline-block">
             <Image src="/logo.png" alt={SITE_NAME} width={140} height={32} className="h-7 w-auto object-contain" />
@@ -66,7 +66,7 @@ export default function Footer() {
                 rel="noopener noreferrer"
                 aria-label={`${SITE_NAME} ${link.label} (새 창)`}
                 title={link.label}
-                className="flex h-10 w-10 items-center justify-center rounded-[10px] border border-black/15 text-[#6e6e73] hover:border-[#1d1d1f] hover:text-[#1d1d1f]"
+                className="flex h-10 w-10 items-center justify-center rounded-[10px] border border-black/25 text-black/70 hover:border-[#1d1d1f] hover:text-[#1d1d1f]"
               >
                 <SocialIcon name={link.icon} />
               </a>

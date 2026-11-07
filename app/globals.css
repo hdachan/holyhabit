@@ -101,3 +101,19 @@ body {
 .no-scrollbar::-webkit-scrollbar {
   display: none;
 }
+
+/* 메인 맨 아래 바다 물결 (components/DownloadSection.tsx) */
+@keyframes sea-wave {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+@keyframes sea-bob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+.sea-wave { animation: sea-wave linear infinite; }
+.sea-bob { animation: sea-bob 4.8s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .sea-wave,
+  .sea-bob { animation: none; }
+}

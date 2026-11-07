@@ -49,6 +49,8 @@ export const DEFAULT_OG_IMAGE_META = {
 
 // 휴대폰 브라우저 주소창 색 (브랜드 색)
 export const THEME_COLOR = "#F4A259";
+// 서브 색 (바다 파랑). 메인 맨 아래 바다와 푸터 바탕에 쓴다.
+export const SUB_COLOR = "#00B7FE";
 
 // ── 기본 작성자
 // 작성자 이름·소개는 관리자 계정마다 "내 작성자 정보"(/admin/profile)에서 입력한다.

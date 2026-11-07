@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import DownloadSection from "@/components/DownloadSection";
+import ShipWheel from "@/components/ShipWheel";
 import {
   SITE_URL,
   SITE_NAME,
@@ -130,7 +131,11 @@ export default function HomePage() {
       />
 
       {/* 첫 화면 한 칸: 왼쪽 그림 + 오른쪽 글 (휴대폰은 그림 위, 글 아래) */}
-      <section className="mx-auto grid max-w-[1156px] items-center gap-10 px-6 py-16 md:min-h-[calc(100vh-62px)] md:grid-cols-2 md:gap-16 md:py-20">
+      <section className="relative mx-auto grid max-w-[1156px] items-center gap-10 px-6 py-16 md:min-h-[calc(100vh-62px)] md:grid-cols-2 md:gap-16 md:py-20">
+        {/* 오른쪽 글 뒤에 있는 듯 없는 듯 깔린 얇은 키(배 운전대) 무늬 (휴대폰은 아래쪽 글 뒤). 대표 그림은 흰 바탕이라 mix-blend-multiply로 흰 부분이 비쳐 보이게 한다 */}
+        <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
+          <ShipWheel className="absolute left-1/2 top-[74%] w-[245px] -translate-x-1/2 -translate-y-1/2 text-[#7A5A3A] opacity-[0.05] md:left-[75%] md:top-1/2 md:w-[380px]" />
+        </div>
         {/* 대표 그림: 노을 바다를 바라보는 미어캣 캐릭터 (public/hero.webp, 1254×1254) */}
         <Image
           src="/hero.webp"
@@ -139,11 +144,11 @@ export default function HomePage() {
           height={1254}
           priority
           sizes="(min-width: 768px) 520px, 100vw"
-          className="mx-auto w-full max-w-[520px]"
+          className="relative mx-auto w-full max-w-[520px] mix-blend-multiply"
         />
 
         {/* 글 묶음은 오른쪽 끝을 상단바 메뉴(콘텐츠) 끝에 맞춘다 */}
-        <div className="text-center md:text-right">
+        <div className="relative text-center md:text-right">
           {/* 페이지의 유일한 h1 */}
           <h1 className="whitespace-pre-line text-[36px] font-bold leading-[1.3] tracking-tight text-[#191f28] md:text-[52px]">
             {HEADLINE}
