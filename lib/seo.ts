@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { DEFAULT_OG_IMAGE, SITE_NAME } from "./site";
+import { DEFAULT_OG_IMAGE_META, SITE_NAME } from "./site";
 
 /**
  * 페이지별 공유 미리보기(openGraph) 정보.
@@ -23,6 +23,6 @@ export function pageOpenGraph({
     title,
     description,
     url,
-    images: [{ url: DEFAULT_OG_IMAGE, alt: SITE_NAME }],
+    images: [DEFAULT_OG_IMAGE_META],
   };
 }

@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { GoogleAnalytics } from "@next/third-parties/google";
 import "./globals.css";
 import { paperlogy } from "@/lib/fonts";
@@ -12,8 +12,16 @@ import {
   SITE_NAME,
   DEFAULT_TITLE,
   DEFAULT_DESCRIPTION,
-  DEFAULT_OG_IMAGE,
+  DEFAULT_OG_IMAGE_META,
+  OG_TITLE,
+  SITE_KEYWORDS,
+  THEME_COLOR,
 } from "@/lib/site";
+
+// 휴대폰 크롬 주소창 색
+export const viewport: Viewport = {
+  themeColor: THEME_COLOR,
+};
 
 export const metadata: Metadata = {
   // 상대경로 메타 URL을 절대경로로 바꿔주는 기준 주소.
@@ -30,6 +38,8 @@ export const metadata: Metadata = {
 
   description: DEFAULT_DESCRIPTION,
 
+  keywords: SITE_KEYWORDS,
+
   // 브라우저·OS가 웹앱 이름으로 인식하는 값.
   applicationName: SITE_NAME,
 
@@ -42,12 +52,19 @@ export const metadata: Metadata = {
     // 한국어 사이트임을 명시.
     locale: "ko_KR",
     siteName: SITE_NAME,
-    title: DEFAULT_TITLE,
+    title: OG_TITLE,
     description: DEFAULT_DESCRIPTION,
     // 기본 공유 이미지. 글 페이지는 대표 이미지가 있으면 그걸로 교체한다.
     // app/opengraph-image.png 파일 방식은 쓰지 않는다. 파일 방식이 코드 설정보다
     // 우선순위가 높아서 글마다 지정한 대표 이미지를 덮어쓸 수 있기 때문.
-    images: [{ url: DEFAULT_OG_IMAGE, alt: SITE_NAME }],
+    images: [DEFAULT_OG_IMAGE_META],
+  },
+
+  // 구글 검색·Discover에서 그림을 크게 보여줘도 된다고 허락한다.
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: { index: true, follow: true, "max-image-preview": "large" },
   },
 
   // 구글 서치콘솔·네이버 서치어드바이저 소유 확인용 메타 태그.

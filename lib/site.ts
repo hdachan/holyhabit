@@ -7,10 +7,31 @@ export const SITE_URL =
 
 export const SITE_NAME = "holyhabit";
 
-export const DEFAULT_TITLE = "holyhabit 홀리해빗 | 함께 이어가는 즐거운 습관";
+// 검색 결과에 나오는 제목 (메타 제목)
+export const DEFAULT_TITLE = "홀리해빗 - 운동이 게임이 되는 운동RPG";
 
+// 검색 결과 제목 아래 설명 (메타 설명)
 export const DEFAULT_DESCRIPTION =
-  "목표를 혼자 버티지 마세요. holyhabit은 즐거움과 함께라는 가치로 다시 하고 싶어지는 습관을 만듭니다. 미어캣 레오와 함께 작은 성취를 발견하고, 어느새 달라진 나를 만나보세요.";
+  "운동을 손맛 있게 기록하고, 모은 코인으로 캐릭터를 키우고 퀘스트를 깨보세요. 운동이 게임이 되는 앱";
+
+// 카톡·SNS에 링크를 공유했을 때 나오는 제목 (OG 제목)
+export const OG_TITLE = "운동하면 레벨업하는 RPG 운동 앱 홀리해빗";
+
+// 키워드 (메타 키워드). 구글은 거의 안 보지만 일부 검색엔진이 참고한다.
+export const SITE_KEYWORDS = [
+  "운동기록",
+  "헬스기록",
+  "운동일지",
+  "오운완",
+  "홈트",
+  "RPG",
+  "레벨업",
+  "캐릭터",
+  "퀘스트",
+  "동기부여",
+  "습관",
+  "PT",
+];
 // 글 목록 주소. 글 주소는 postPath("column-001") → "/blog/column-001".
 // 예전 주소(/news/...)는 next.config.ts에서 여기로 영구 이동(301)시킨다.
 export const BLOG_PATH = "/blog";
@@ -18,6 +39,16 @@ export const postPath = (slug: string) => `${BLOG_PATH}/${slug}`;
 
 // 링크 공유 시 기본 미리보기 이미지 (public/og.png, 1200×630 권장).
 export const DEFAULT_OG_IMAGE = "/og.png";
+// 기본 공유 이미지 정보: 크기를 미리 알려주면 카톡이 첫 공유부터 카드를 제대로 그린다.
+export const DEFAULT_OG_IMAGE_META = {
+  url: DEFAULT_OG_IMAGE,
+  width: 1200,
+  height: 630,
+  alt: "운동이 게임이 되는 앱",
+};
+
+// 휴대폰 브라우저 주소창 색 (브랜드 색)
+export const THEME_COLOR = "#F4A259";
 
 // ── 기본 작성자
 // 작성자 이름·소개는 관리자 계정마다 "내 작성자 정보"(/admin/profile)에서 입력한다.
@@ -42,6 +73,8 @@ export const BUSINESS_ADDRESS_TEXT = `${BUSINESS_ADDRESS.region} ${BUSINESS_ADDR
 // 비워두면 푸터에 "준비 중"으로 표시된다.
 export const CONTACT_EMAIL = "holyhabits915@gmail.com";
 export const CONTACT_HOURS = "평일 10:00~18:00, 영업일 기준 1~2일 내 답변";
-export const SOCIAL_LINKS: { label: string; url: string }[] = [
-  { label: "인스타그램", url: "https://www.instagram.com/holyhabit_official/" },
+// icon: 푸터에 보여줄 아이콘 종류 (components/Footer.tsx)
+export const SOCIAL_LINKS: { label: string; url: string; icon: "instagram" | "youtube" }[] = [
+  { label: "인스타그램", url: "https://www.instagram.com/holyhabit_official/", icon: "instagram" },
+  { label: "유튜브", url: "https://www.youtube.com/@HolyHabits915", icon: "youtube" },
 ];

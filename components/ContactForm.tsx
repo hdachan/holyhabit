@@ -1,15 +1,27 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { submitInquiry } from "@/app/contact/actions";
-import { INQUIRY_CONTENT_MAX, INQUIRY_TYPES, checkInquiry } from "@/lib/inquiry";
+import { DELETE_TYPE, INQUIRY_CONTENT_MAX, INQUIRY_TYPES, checkInquiry } from "@/lib/inquiry";
 import { CONTACT_HOURS } from "@/lib/site";
 import ConsentBox, { HoneypotField, inputClass } from "@/components/ConsentBox";
 
+// 주소가 /contact#delete 이면 "계정 삭제 요청"을 미리 골라 둔다 (구글 플레이에 등록하는 계정 삭제 주소).
+function subscribeHash(onChange: () => void) {
+  window.addEventListener("hashchange", onChange);
+  return () => window.removeEventListener("hashchange", onChange);
+}
+const isDeleteHash = () => window.location.hash === "#delete";
+const notDeleteHash = () => false;
+
 // 문의하기 탭: 양식으로 한 번 보내고 끝. 답장은 이메일로 드린다.
 export default function ContactForm() {
-  const [type, setType] = useState("");
+  const deleteHash = useSyncExternalStore(subscribeHash, isDeleteHash, notDeleteHash);
+  const [picked, setPicked] = useState("");
+  const type = picked || (deleteHash ? DELETE_TYPE : "");
+  const setType = setPicked;
+  const isDelete = type === DELETE_TYPE;
   const [email, setEmail] = useState("");
   const [content, setContent] = useState("");
   const [agreed, setAgreed] = useState(false);
@@ -81,9 +93,27 @@ export default function ContactForm() {
         </select>
       </div>
 
+      {isDelete && (
+        <div className="rounded-[12px] bg-[#fff4ea] px-5 py-4 text-[14px] leading-[1.7] text-[#212124]">
+          <p className="font-bold">HolyHabit 앱 계정 삭제 요청</p>
+          <ul className="mt-2 list-disc pl-5 text-[#4d5159]">
+            <li>앱에 로그인한 구글 계정 이메일을 아래에 적어주세요. 그 이메일로 본인 확인 후 삭제해 드려요.</li>
+            <li>
+              <b>삭제되는 것:</b> 계정 정보(이메일, 닉네임, 구글 식별자), 운동 기록, 걸음수, 캐릭터·배틀 기록, 골드·신발코인과
+              아이템. 삭제 후에는 되살릴 수 없어요.
+            </li>
+            <li>
+              <b>남는 것:</b> 법에 따라 보관해야 하는 기록만 정해진 기간 동안 보관 후 파기해요 (접속 기록 3개월, 소비자
+              분쟁 기록 3년 등).
+            </li>
+            <li>앱이 있다면 앱 설정 &gt; 회원 탈퇴에서 바로 삭제할 수도 있어요.</li>
+          </ul>
+        </div>
+      )}
+
       <div>
         <label htmlFor="inquiry-email" className="mb-2 block text-[15px] font-semibold text-[#212124]">
-          답장받을 이메일
+          {isDelete ? "앱에 로그인한 구글 계정 이메일" : "답장받을 이메일"}
         </label>
         <input
           id="inquiry-email"
@@ -106,7 +136,7 @@ export default function ContactForm() {
           onChange={(e) => setContent(e.target.value)}
           rows={8}
           maxLength={INQUIRY_CONTENT_MAX}
-          placeholder="궁금한 점이나 제안을 자유롭게 적어주세요."
+          placeholder={isDelete ? "앱 닉네임과 함께 삭제를 원한다고 적어주세요. (예: 닉네임 레오, 계정 삭제를 요청합니다)" : "궁금한 점이나 제안을 자유롭게 적어주세요."}
           className={`${inputClass} resize-y leading-[1.7]`}
         />
         <p className="mt-1 text-right text-[13px] text-[#868b94]">

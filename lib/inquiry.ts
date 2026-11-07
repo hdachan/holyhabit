@@ -6,7 +6,9 @@
 
 export type InquiryKind = "inquiry" | "bug";
 
-export const INQUIRY_TYPES = ["서비스 문의", "제휴·광고", "기타"] as const;
+export const INQUIRY_TYPES = ["서비스 문의", "제휴·광고", "계정 삭제 요청", "기타"] as const;
+// 앱 계정 삭제 요청. 구글 플레이에 "/contact#delete" 주소를 등록하면 이 유형이 미리 골라진다.
+export const DELETE_TYPE = "계정 삭제 요청";
 // 버그 제보는 유형을 고르지 않는다. inquiries.type에는 이 값이 들어간다.
 export const BUG_TYPE = "버그 제보";
 

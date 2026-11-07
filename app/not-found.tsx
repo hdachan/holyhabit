@@ -6,6 +6,8 @@ import { BLOG_PATH } from "@/lib/site";
 // <title>을 본문에 직접 넣으면 기본 제목과 두 개가 겹쳐 나가서 metadata로 지정한다.
 export const metadata: Metadata = {
   title: "페이지를 찾을 수 없어요",
+  // layout의 "검색 허용" 설정을 물려받지 않게 직접 막는다 (Next가 붙이는 noindex와 겹치지 않게).
+  robots: { index: false, follow: true },
 };
 
 // 없는 주소로 들어왔을 때 보여주는 화면(404).

@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
-import AboutSectionNav from "@/components/AboutSectionNav";
+import Image from "next/image";
 import {
   SITE_URL,
   SITE_NAME,
-  DEFAULT_TITLE,
   DEFAULT_DESCRIPTION,
+  OG_TITLE,
   SOCIAL_LINKS,
   BUSINESS_NAME,
   BUSINESS_REG_NO,
@@ -14,12 +14,12 @@ import {
 } from "@/lib/site";
 import { pageOpenGraph } from "@/lib/seo";
 
-// 메인(홈) = 브랜드 소개. 글 목록은 /blog에 있다.
-// 제목·설명은 layout 기본값을 쓰고 정본 주소만 지정한다.
+// 메인(홈) = 앱 한 줄 소개 (첫 화면 한 칸). 회사 소개는 /about, 글 목록은 /blog.
+// 제목·설명은 layout 기본값(lib/site.ts)을 쓰고 정본 주소만 지정한다.
 export const metadata: Metadata = {
   alternates: { canonical: "/" },
   openGraph: pageOpenGraph({
-    title: DEFAULT_TITLE,
+    title: OG_TITLE,
     description: DEFAULT_DESCRIPTION,
     url: "/",
   }),
@@ -33,7 +33,7 @@ const siteJsonLd = {
     {
       "@type": "WebSite",
       name: SITE_NAME,
-      alternateName: ["홀리해빗", "holy habit"],
+      alternateName: ["홀리해빗", "holyhabits", "홀리 해빗"],
       url: `${SITE_URL}/`,
       inLanguage: "ko-KR",
     },
@@ -42,7 +42,7 @@ const siteJsonLd = {
       name: SITE_NAME,
       // 사업자등록증의 상호와 번호. 검색엔진이 실제 운영 주체를 확인하는 데 쓴다.
       legalName: BUSINESS_NAME,
-      alternateName: BUSINESS_NAME,
+      alternateName: ["홀리해빗", "holyhabits", "홀리 해빗"],
       taxID: BUSINESS_REG_NO,
       founder: { "@type": "Person", name: BUSINESS_OWNER },
       address: {
@@ -68,167 +68,57 @@ const siteJsonLd = {
   ],
 };
 
-// 이미지 배치: full = 텍스트 아래 전체 폭, right/left = 텍스트 옆
-type Layout = "full" | "right" | "left";
+// 화면에 보이는 글. 여기만 고치면 문구가 바뀐다. (회사 소개 글은 app/about/page.tsx)
+const HEADLINE = "오늘의 운동이\n오늘의 레벨업";
+const INTRO = "운동을 손맛 있게 기록하고,\n모은 코인으로 캐릭터를 키우고 퀘스트를 깨보세요.";
+// 베타테스트 신청 주소. 비어 있으면 "베타테스트 준비 중"(누를 수 없음)으로 보인다.
+const APP_LINK: string = "";
 
-type Section = {
-  id: string; // 섹션 메뉴의 이동 위치(#id)
-  label: string;
-  heading: string;
-  layout: Layout;
-  paragraphs: string[];
-  quote?: string; // 굵게 강조하는 문장
-  items?: { title: string; text: string }[]; // EXPERIENCE의 세 가지 가치
-  closing?: string; // 이미지 아래 마무리 문장
+// 기능 소개 칸들 (첫 화면 아래). 위에서부터 차례로 보이고, 그림은 오른쪽·왼쪽을 번갈아 놓는다.
+type Feature = {
+  title: string;
+  text: string;
+  image: { src: string; width: number; height: number; alt: string };
 };
-
-// 문구는 데이터로 분리해서 JSX를 건드리지 않고 수정할 수 있게 한다.
-// "\n"은 화면에서 줄바꿈으로 표시된다(whitespace-pre-line).
-const SECTIONS: Section[] = [
+const FEATURES: Feature[] = [
   {
-    id: "introduction",
-    label: "INTRODUCTION",
-    heading: "혼자라면 멈추기 쉽지만, 함께라면 한 걸음 더 나아갈 수 있습니다.",
-    layout: "full",
-    paragraphs: [
-      "holyhabit은 목표의 성취에만 의미를 두는 것이 아닌\n‘즐거움’에 ‘함께’라는 가치를 더합니다.",
-      "재미있게 시작하고, 함께 이어가며, 어느새 달라진 나를 만나는 것.\n그것이 holyhabit이 만들어가고 싶은 새로운 습관입니다.",
-    ],
+    // 운동 기록
+    title: "기록하는 순간,\n이펙트가 터진다",
+    text: "무게와 횟수를 적고 저장하면 화면이 번쩍.\n지루했던 운동일지가 손맛 나는 기록이 됩니다.\n헬스부터 홈트까지, 오늘의 오운완을 남겨보세요.",
+    image: {
+      src: "/feature-record.webp",
+      width: 1024,
+      height: 2000,
+      alt: "홀리해빗 앱에서 벤치프레스 무게와 횟수를 기록하고 저장하는 순간 번개 이펙트가 터지는 화면",
+    },
   },
   {
-    id: "why",
-    label: "WHY",
-    heading: "반복되는 실패, 계속되는 질문",
-    layout: "right",
-    paragraphs: [
-      "새로운 목표를 세우는 순간에는 누구나 설렙니다.\n하지만 시간이 지나면 처음의 마음은 조금씩 흐려집니다.\n바쁜 하루에 한 번 미루고, 힘든 날에 쉬다 보면 어느새 목표는 뒤로 밀려나곤 합니다.",
-      "holyhabit은 여기서 질문을 던졌습니다.",
-    ],
-    quote: "“왜 시작하는 마음은 쉽게 생기는데, 계속하는 마음은 쉽게 사라질까?”",
+    // 캐릭터 (초안 문구)
+    title: "운동한 만큼\n캐릭터가 자란다",
+    text: "운동으로 모은 코인으로 미어캣 캐릭터를 레벨업하세요.\n체력과 공격력 같은 스탯이 오르고, 새로운 캐릭터를 모으고,\n방 안에 숨은 퀘스트까지 깨보세요.",
+    image: {
+      src: "/feature-character.webp",
+      width: 1024,
+      height: 2000,
+      alt: "홀리해빗 앱 캐릭터 화면: 레벨 3 미어캣 캐릭터와 체력·공격력 스탯, 퀘스트 알림, 모은 캐릭터 카드",
+    },
   },
   {
-    id: "experience",
-    label: "EXPERIENCE",
-    heading: "하고 싶은 마음이, 계속하는 힘이 되도록",
-    layout: "left",
-    paragraphs: [],
-    items: [
-      {
-        title: "GOAL — 성취",
-        text: "목표를 이루는 것만이 아니라,\n목표를 향해 나아가는 순간까지 성취로 느끼는 경험.",
-      },
-      {
-        title: "PLAY — 즐거움",
-        text: "해야 해서 하는 것이 아니라,\n재미있어서 한 번 더 움직이는 경험.",
-      },
-      {
-        title: "TOGETHER — 함께",
-        text: "혼자라면 지나쳤을 작은 순간도\n함께라면 새로운 동기가 되는 경험.",
-      },
-    ],
-    closing:
-      "holyhabit은 목표를 이루는 과정 자체가\n즐겁고 의미 있는 경험이 될 수 있도록 만듭니다.",
-  },
-  {
-    id: "together",
-    label: "TOGETHER",
-    heading: "혼자서는 포기할 이유가 많지만, 함께라면 계속할 이유가 생깁니다.",
-    layout: "full",
-    paragraphs: [
-      "holyhabit은 목표를 혼자만의 의지에 맡기지 않습니다.\n함께 시작하고, 서로의 작은 성취를 발견하며, 멈추고 싶을 때 다시 움직일 수 있도록.",
-    ],
-    quote: "함께한다는 것은 계속할 이유를 서로에게 만들어주는 일이라고 믿습니다.",
-  },
-  {
-    id: "character",
-    label: "CHARACTER",
-    heading: "미어캣 레오가 함께합니다.",
-    layout: "right",
-    paragraphs: [
-      "미어캣은 함께 서로를 지키고\n주변을 탐험하며 살아갑니다.",
-      "때로는 넘어지고 엉뚱한 길로 가더라도\n다시 일어나 앞으로 나아갑니다.",
-      "함께 서로를 지키며 각자의 목표를 향해 나아가는 것.\n그 모습이 holyhabit과 닮아 있습니다.",
-    ],
-    quote: "미어캣 레오가 여러분과 함께합니다.",
-  },
-  {
-    id: "identity",
-    label: "IDENTITY",
-    heading: "holyhabit이라는 이름",
-    layout: "full",
-    paragraphs: [
-      "holyhabit이라는 이름에는 하나의 바람이 담겨 있습니다.\n습관은 때때로 ‘해야만 하는 것’이 되어 스스로를 밀어붙이게 합니다.",
-      "억지로 지켜내는 습관이 아니라, 다시 하고 싶어지는 습관.\n혼자 버티는 습관이 아니라, 함께 이어가는 습관.",
-      "그 과정이 즐거워 자연스럽게 이어지는 것.\n그것이 holyhabit이 만들고 싶은 습관입니다.",
-    ],
-  },
-  {
-    id: "vision",
-    label: "VISION",
-    heading: "더 나은 나를 향한 길에, 더 많은 이유를.",
-    layout: "full",
-    paragraphs: [
-      "우리는 목표를 이루는 방식이 달라질 수 있다고 믿습니다.\n더 강한 의지로 버티는 것이 아니라, 더 즐거운 경험으로 계속할 수 있도록.\n더 치열하게 경쟁하는 것이 아니라, 서로의 한 걸음을 응원하며 나아갈 수 있도록.",
-      "holyhabit은 목표를 오래 이어갈 수 있는 이유를 함께 만들어가고자 합니다.",
-    ],
-    quote: "그것이 holyhabit이 그리고 있는 미래입니다.\nYour Journey. Never Alone.",
+    // 몬스터 전투 (초안 문구)
+    title: "키운 캐릭터로\n몬스터와 한판 승부",
+    text: "운동으로 강해진 캐릭터가 몬스터와 싸워요.\n쌓아 온 체력과 공격력이 그대로 전투력이 되는 진짜 RPG.\n오늘의 운동이 내일의 승리가 됩니다.",
+    image: {
+      src: "/feature-battle.webp",
+      width: 1034,
+      height: 2000,
+      alt: "홀리해빗 앱 전투 화면: 캐릭터가 몬스터 흑화 검정이에게 32 데미지를 주는 RPG 배틀 장면",
+    },
   },
 ];
 
-// 사진이 들어갈 자리. 실제 사진이 정해지면 next/image로 교체한다.
-function ImagePlaceholder({ className = "" }: { className?: string }) {
-  return (
-    <div
-      aria-hidden
-      className={`w-full rounded-[28px] bg-[#f2f4f6] ${className}`}
-    />
-  );
-}
-
-// 섹션 머리: 주황 라벨 → 큰 제목
-function SectionHead({ section, center = false }: { section: Section; center?: boolean }) {
-  return (
-    <div className={center ? "text-center" : ""}>
-      <p className="text-[15px] font-bold text-[#e8893a] md:text-[17px]">{section.label}</p>
-      <h2 className="mt-3 whitespace-pre-line text-[30px] font-bold leading-[1.35] tracking-tight text-[#191f28] md:text-[44px]">
-        {section.heading}
-      </h2>
-    </div>
-  );
-}
-
-function Paragraphs({ texts, center = false }: { texts: string[]; center?: boolean }) {
-  if (texts.length === 0) return null;
-  return (
-    <div className={`mt-8 flex flex-col gap-5 ${center ? "text-center" : ""}`}>
-      {texts.map((text, i) => (
-        <p
-          key={i}
-          className="whitespace-pre-line text-[17px] leading-[1.8] text-[#4e5968] md:text-[19px]"
-        >
-          {text}
-        </p>
-      ))}
-    </div>
-  );
-}
-
-// 강조 문장: 연한 주황 상자
-function Quote({ text, center = false }: { text: string; center?: boolean }) {
-  return (
-    <p
-      className={`mt-8 whitespace-pre-line rounded-[20px] bg-[#fff4ea] px-6 py-5 text-[17px] font-bold leading-[1.7] text-[#191f28] md:px-8 md:py-6 md:text-[20px] ${
-        center ? "text-center" : ""
-      }`}
-    >
-      {text}
-    </p>
-  );
-}
-
 export default function HomePage() {
   return (
-    <div className="bg-white">
+    <main className="bg-white">
       <script
         type="application/ld+json"
         // "<"를 이스케이프해서 값에 "</script>"가 들어가도 태그가 깨지지 않게 한다.
@@ -237,85 +127,73 @@ export default function HomePage() {
         }}
       />
 
-      {/* 히어로: 페이지의 유일한 h1 */}
-      <section className="mx-auto max-w-[1156px] px-6 pb-16 pt-20 text-center md:pb-24 md:pt-32">
-        <h1 className="text-[44px] font-bold leading-[1.15] tracking-tight text-[#191f28] md:text-[76px]">
-          Your Journey.
-          <br />
-          Never Alone.
-        </h1>
-        <p className="mx-auto mt-6 max-w-[560px] text-[17px] leading-[1.7] text-[#4e5968] md:text-[20px]">
-          즐거움이 발걸음이 되고, 함께가 길이 되는 여정
-        </p>
-        <ImagePlaceholder className="mt-16 aspect-[16/9] md:mt-20 md:aspect-[21/9]" />
+      {/* 첫 화면 한 칸: 왼쪽 그림 + 오른쪽 글 (휴대폰은 그림 위, 글 아래) */}
+      <section className="mx-auto grid max-w-[1156px] items-center gap-10 px-6 py-16 md:min-h-[calc(100vh-62px)] md:grid-cols-2 md:gap-16 md:py-20">
+        {/* 대표 그림: 노을 바다를 바라보는 미어캣 캐릭터 (public/hero.webp, 1254×1254) */}
+        <Image
+          src="/hero.webp"
+          alt="망토를 두른 홀리해빗 미어캣 캐릭터가 절벽 위에서 노을 진 바다와 섬 마을을 바라보는 그림"
+          width={1254}
+          height={1254}
+          priority
+          sizes="(min-width: 768px) 520px, 100vw"
+          className="mx-auto w-full max-w-[520px]"
+        />
+
+        {/* 글 묶음은 오른쪽 끝을 상단바 메뉴(콘텐츠) 끝에 맞춘다 */}
+        <div className="text-center md:text-right">
+          {/* 페이지의 유일한 h1 */}
+          <h1 className="whitespace-pre-line text-[36px] font-bold leading-[1.3] tracking-tight text-[#191f28] md:text-[52px]">
+            {HEADLINE}
+          </h1>
+          <p className="mt-6 whitespace-pre-line text-[17px] leading-[1.8] text-[#4e5968] md:text-[19px]">{INTRO}</p>
+
+          {/* 앱 연결 버튼. 베타테스트가 열리면 APP_LINK에 주소를 넣으면 눌리는 버튼으로 바뀐다. */}
+          {APP_LINK ? (
+            <a
+              href={APP_LINK}
+              className="mt-10 inline-block rounded-[16px] bg-[#F4A259] px-10 py-4 text-[17px] font-bold text-white hover:brightness-95"
+            >
+              베타테스트 참여하기
+            </a>
+          ) : (
+            <span
+              aria-disabled="true"
+              className="mt-10 inline-block cursor-default rounded-[16px] bg-[#e5e8eb] px-10 py-4 text-[17px] font-bold text-[#8b95a1]"
+            >
+              베타테스트 준비 중
+            </span>
+          )}
+        </div>
       </section>
 
-      <AboutSectionNav sections={SECTIONS.map(({ id, label }) => ({ id, label }))} />
 
-      <main>
-        {SECTIONS.map((section, i) => (
-          // 섹션마다 흰색·연회색 배경을 번갈아 써서 구분한다 (구분선 대신).
-          // scroll-mt: 메뉴를 눌러 이동했을 때 상단 고정 메뉴에 제목이 가려지지 않게 한다.
-          <section
-            key={section.id}
-            id={section.id}
-            className={`scroll-mt-20 ${i % 2 === 1 ? "bg-[#f9fafb]" : "bg-white"}`}
-          >
-            <div className="mx-auto max-w-[1156px] px-6 py-24 md:py-32">
-              {section.layout === "full" && (
-                <>
-                  <div className="mx-auto max-w-[760px]">
-                    <SectionHead section={section} center />
-                    <Paragraphs texts={section.paragraphs} center />
-                    {section.quote && <Quote text={section.quote} center />}
-                  </div>
-                  <ImagePlaceholder className="mt-16 aspect-[16/9] md:aspect-[2/1]" />
-                </>
-              )}
-
-              {section.layout === "right" && (
-                <div className="grid items-center gap-12 md:grid-cols-2 md:gap-16">
-                  <div>
-                    <SectionHead section={section} />
-                    <Paragraphs texts={section.paragraphs} />
-                    {section.quote && <Quote text={section.quote} />}
-                  </div>
-                  <ImagePlaceholder className="aspect-[4/5]" />
-                </div>
-              )}
-
-              {section.layout === "left" && (
-                <>
-                  <SectionHead section={section} center />
-                  {/* 세 가지 가치: 카드 3장 ("GOAL — 성취" → 작은 영어 + 큰 한글) */}
-                  <div className="mt-14 grid gap-4 md:grid-cols-3 md:gap-6">
-                    {section.items?.map((item) => {
-                      const [en, ko] = item.title.split(" — ");
-                      return (
-                        <div
-                          key={item.title}
-                          className="rounded-[28px] bg-[#f6f7f9] p-8 md:p-10"
-                        >
-                          <p className="text-[14px] font-bold tracking-[0.06em] text-[#e8893a]">{en}</p>
-                          <h3 className="mt-2 text-[26px] font-bold text-[#191f28]">{ko ?? en}</h3>
-                          <p className="mt-4 whitespace-pre-line text-[16px] leading-[1.75] text-[#4e5968]">
-                            {item.text}
-                          </p>
-                        </div>
-                      );
-                    })}
-                  </div>
-                  {section.closing && (
-                    <p className="mx-auto mt-14 max-w-[760px] whitespace-pre-line text-center text-[20px] font-bold leading-[1.6] text-[#191f28] md:text-[24px]">
-                      {section.closing}
-                    </p>
-                  )}
-                </>
-              )}
+      {FEATURES.map((feature, i) => {
+        // 짝수 번째(0, 2, …)는 글 왼쪽·그림 오른쪽, 홀수 번째는 그림 왼쪽·글 오른쪽. 휴대폰은 항상 글 위·그림 아래.
+        const imageLeft = i % 2 === 1;
+        return (
+          <section key={feature.image.src} className={i % 2 === 0 ? "bg-[#f9fafb]" : "bg-white"}>
+            <div className="mx-auto grid max-w-[1156px] items-center gap-12 px-6 py-20 md:grid-cols-2 md:gap-16 md:py-28">
+              <div className={`text-center md:text-left ${imageLeft ? "md:order-2" : ""}`}>
+                <h2 className="whitespace-pre-line text-[30px] font-bold leading-[1.35] tracking-tight text-[#191f28] md:text-[44px]">
+                  {feature.title}
+                </h2>
+                <p className="mt-6 whitespace-pre-line text-[17px] leading-[1.8] text-[#4e5968] md:text-[19px]">
+                  {feature.text}
+                </p>
+              </div>
+              <Image
+                src={feature.image.src}
+                alt={feature.image.alt}
+                width={feature.image.width}
+                height={feature.image.height}
+                sizes="(min-width: 768px) 320px, 70vw"
+                className={`mx-auto w-[70%] max-w-[320px] rounded-[32px] shadow-[0_20px_60px_rgba(0,0,0,0.18)] ${imageLeft ? "md:order-1" : ""}`}
+              />
             </div>
           </section>
-        ))}
-      </main>
-    </div>
+        );
+      })}
+    </main>
   );
 }

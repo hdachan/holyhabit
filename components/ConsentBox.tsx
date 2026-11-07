@@ -22,7 +22,7 @@ export default function ConsentBox({
       </ul>
       <p className="mt-2">
         동의하지 않을 수 있으며, 이 경우 접수가 어려워요. 자세한 내용은{" "}
-        <Link href="/privacy" className="underline">
+        <Link href="/privacy#web" className="underline">
           개인정보처리방침
         </Link>
         을 확인해주세요.
