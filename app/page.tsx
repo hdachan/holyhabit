@@ -5,6 +5,7 @@ import ShipWheel from "@/components/ShipWheel";
 import {
   SITE_URL,
   SITE_NAME,
+  ORG_ID,
   DEFAULT_DESCRIPTION,
   OG_TITLE,
   SOCIAL_LINKS,
@@ -41,6 +42,7 @@ const siteJsonLd = {
     },
     {
       "@type": "Organization",
+      "@id": ORG_ID,
       name: SITE_NAME,
       // 사업자등록증의 상호와 번호. 검색엔진이 실제 운영 주체를 확인하는 데 쓴다.
       legalName: BUSINESS_NAME,
@@ -74,7 +76,7 @@ const siteJsonLd = {
 const HEADLINE = "오늘의 운동이\n오늘의 레벨업";
 const INTRO = "운동을 손맛 있게 기록하고,\n모은 코인으로 캐릭터를 키우고 퀘스트를 깨보세요.";
 // 베타테스트 신청 주소. 비어 있으면 "베타테스트 준비 중"(누를 수 없음)으로 보인다.
-const APP_LINK: string = "";
+const APP_LINK: string = "https://forms.gle/QofLkXzGL13UmBq68";
 
 
 // 기능 소개 칸들 (첫 화면 아래). 위에서부터 차례로 보이고, 그림은 오른쪽·왼쪽을 번갈아 놓는다.
@@ -159,6 +161,8 @@ export default function HomePage() {
           {APP_LINK ? (
             <a
               href={APP_LINK}
+              target="_blank"
+              rel="noopener noreferrer"
               className="mt-10 inline-block rounded-[16px] bg-[#F4A259] px-10 py-4 text-[17px] font-bold text-white hover:brightness-95"
             >
               베타테스트 참여하기

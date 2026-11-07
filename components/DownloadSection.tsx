@@ -42,8 +42,11 @@ function wavePath(w: Wave, closed: boolean) {
 
 const DOWNLOAD_TITLE = "운동을 즐겁게 하세요";
 // 스토어 주소. 비어 있으면 버튼 모양만 보이고 눌리지 않는다. 출시되면 주소를 넣는다.
-const APP_STORE_URL: string = "";
-const PLAY_STORE_URL: string = "";
+// 지금은 출시 전이라 베타테스트 신청 폼으로 연결. 스토어에 올라가면 스토어 주소로 바꾸고 IS_BETA를 false로 바꾼다.
+// IS_BETA가 true면 버튼 글씨가 "다운로드하기" 대신 "베타테스트 신청하기"로 보인다.
+const IS_BETA = true;
+const APP_STORE_URL: string = "https://forms.gle/QofLkXzGL13UmBq68";
+const PLAY_STORE_URL: string = "https://forms.gle/QofLkXzGL13UmBq68";
 
 export default function DownloadSection() {
   return (
@@ -114,7 +117,13 @@ export default function DownloadSection() {
 
 // 스토어 버튼 (흰 바탕 + 테두리 + 로고 + 두 줄 글씨). 주소가 없으면 눌리지 않는 모양으로 보인다.
 function StoreButton({ store, href }: { store: "apple" | "google"; href: string }) {
-  const label = store === "apple" ? "Apple App Store에서" : "Google Play에서";
+  const label = IS_BETA
+    ? store === "apple"
+      ? "Apple App Store"
+      : "Google Play"
+    : store === "apple"
+      ? "Apple App Store에서"
+      : "Google Play에서";
   const content = (
     <>
       <svg viewBox="0 0 24 24" aria-hidden="true" className="h-5 w-5 shrink-0 md:h-6 md:w-6">
@@ -132,7 +141,7 @@ function StoreButton({ store, href }: { store: "apple" | "google"; href: string 
       </svg>
       <span className="flex flex-col items-start leading-tight">
         <span className="whitespace-nowrap text-[11px] font-medium text-[#4e5968]">{label}</span>
-        <span className="text-[14px] font-bold text-[#191f28] md:text-[15px]">다운로드하기</span>
+        <span className="text-[14px] font-bold text-[#191f28] md:text-[15px]">{IS_BETA ? "베타테스트 신청하기" : "다운로드하기"}</span>
       </span>
     </>
   );

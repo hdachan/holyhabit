@@ -7,6 +7,9 @@ export const SITE_URL =
 
 export const SITE_NAME = "holyhabit";
 
+// 검색엔진용 회사(Organization) 고유 이름표. 메인에 회사 정보를 한 번 적고, 다른 페이지는 이 값으로 "같은 회사"라고 가리킨다.
+export const ORG_ID = `${SITE_URL}/#organization`;
+
 // 검색 결과에 나오는 제목 (메타 제목)
 export const DEFAULT_TITLE = "홀리해빗 - 운동이 게임이 되는 운동RPG";
 
