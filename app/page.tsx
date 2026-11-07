@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Image from "next/image";
+import DownloadSection from "@/components/DownloadSection";
 import {
   SITE_URL,
   SITE_NAME,
@@ -73,6 +74,7 @@ const HEADLINE = "오늘의 운동이\n오늘의 레벨업";
 const INTRO = "운동을 손맛 있게 기록하고,\n모은 코인으로 캐릭터를 키우고 퀘스트를 깨보세요.";
 // 베타테스트 신청 주소. 비어 있으면 "베타테스트 준비 중"(누를 수 없음)으로 보인다.
 const APP_LINK: string = "";
+
 
 // 기능 소개 칸들 (첫 화면 아래). 위에서부터 차례로 보이고, 그림은 오른쪽·왼쪽을 번갈아 놓는다.
 type Feature = {
@@ -194,6 +196,8 @@ export default function HomePage() {
           </section>
         );
       })}
+
+      <DownloadSection />
     </main>
   );
 }
