@@ -5,13 +5,13 @@ import { BLOG_PATH, SITE_NAME, SITE_URL, SOCIAL_LINKS, postPath } from "@/lib/si
 import { pageOpenGraph } from "@/lib/seo";
 
 const BLOG_DESCRIPTION =
-  "혼자서는 작심삼일, 함께라면 계속할 이유가 생깁니다. 운동 습관, 헬스 초보 팁, 꾸준함을 만드는 방법까지 holyhabit의 습관 이야기를 만나보세요.";
+  "세상을 즐거움으로 바라보는 홀리해빗이 운동을 꾸준히 이어가는 방법과 함께하면 더 즐거운 습관 이야기를 전합니다.";
 
 // 콘텐츠(글 목록) 페이지 메타.
 // canonical을 layout이 아닌 각 페이지에 두는 이유: layout에 두면 모든 하위 페이지가 상속받아
 // 글 페이지까지 "정본은 홈"이라고 선언하게 된다.
 export const metadata: Metadata = {
-  title: "콘텐츠",
+  title: { absolute: `운동 습관·동기부여 이야기 - 홀리해빗 콘텐츠 | ${SITE_NAME}` },
   // 메인과 설명이 같으면 중복 페이지로 보일 수 있어서 목록 전용 설명을 쓴다.
   description: BLOG_DESCRIPTION,
   alternates: { canonical: BLOG_PATH },
